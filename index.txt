@@ -6,216 +6,300 @@
     <title>Trắc nghiệm Quản trị hệ thống mạng</title>
     <style>
         body { font-family: Arial, sans-serif; line-height: 1.6; padding: 20px; background-color: #f4f4f9; }
-        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .container { max-width: 900px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
         h1 { text-align: center; color: #333; }
-        .question { margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid #eee; }
-        .question h3 { margin-bottom: 10px; color: #0056b3; }
+        .filters { display: flex; gap: 15px; margin-bottom: 20px; padding: 15px; background: #e9ecef; border-radius: 8px; justify-content: center; flex-wrap: wrap;}
+        .filters select { padding: 10px; font-size: 16px; border-radius: 5px; border: 1px solid #ccc; outline: none; cursor: pointer; }
+        .question { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+        .question h3 { margin-bottom: 10px; color: #0056b3; font-size: 18px; }
+        .badge { background: #dc3545; color: white; padding: 3px 8px; border-radius: 4px; font-size: 14px; margin-right: 8px; vertical-align: middle;}
         .options { list-style: none; padding: 0; }
         .options li { margin-bottom: 8px; }
-        .options label { cursor: pointer; display: block; padding: 8px; background: #e9ecef; border-radius: 4px; transition: 0.3s; }
-        .options label:hover { background: #d3d9df; }
+        .options label { cursor: pointer; display: block; padding: 10px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 4px; transition: 0.2s; }
+        .options label:hover { background: #e2e6ea; }
         .btn-submit { display: block; width: 100%; padding: 15px; background: #28a745; color: white; border: none; font-size: 18px; border-radius: 5px; cursor: pointer; margin-top: 20px;}
         .btn-submit:hover { background: #218838; }
         #result { margin-top: 20px; font-size: 20px; font-weight: bold; text-align: center; color: #d9534f; }
+        .stats { text-align: center; font-style: italic; color: #666; margin-bottom: 20px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1>Ôn tập Quản trị Hệ thống Mạng</h1>
+    
+    <div class="filters">
+        <select id="chonChuong" onchange="locCauHoi()">
+            <option value="all">-- Tất cả các chương --</option>
+            <option value="1">Chương 1</option>
+            <option value="2">Chương 2</option>
+            <option value="3">Chương 3</option>
+            <option value="4">Chương 4</option>
+            <option value="5">Chương 5</option>
+            <option value="6">Chương 6</option>
+            <option value="7">Chương 7</option>
+            <option value="8">Chương 8</option>
+        </select>
+        <select id="chonLoai" onchange="locCauHoi()">
+            <option value="all">-- Tất cả loại câu hỏi --</option>
+            <option value="thuong">Câu hỏi thường</option>
+            <option value="diem_liet">Câu điểm liệt</option>
+        </select>
+    </div>
+
+    <div class="stats" id="stats">Đang tải câu hỏi...</div>
     <div id="quiz"></div>
     <button class="btn-submit" onclick="kiemTraKetQua()">Nộp Bài</button>
     <div id="result"></div>
 </div>
 
 <script>
-    // Dữ liệu câu hỏi lấy từ file của bạn
-const danhSachCauHoi = [
-    // PHẦN I: CHƯƠNG 1
-    { cauHoi: "Câu 1: Quản trị hệ thống mạng là gì?", luaChon: ["A. Thiết kế phần mềm", "B. Quản lý và vận hành hệ thống mạng", "C. Lập trình ứng dụng", "D. Thiết kế website"], dapAnDung: 1 }, // [cite: 3, 4]
-    { cauHoi: "Câu 2: Vai trò chính của quản trị viên hệ thống là:", luaChon: ["A. Viết code", "B. Quản lý người dùng và hệ thống", "C. Thiết kế game", "D. Marketing"], dapAnDung: 1 }, // [cite: 6, 7]
-    { cauHoi: "Câu 3: Mục tiêu của quản trị mạng là:", luaChon: ["A. Tăng số lượng người dùng", "B. Đảm bảo hệ thống hoạt động ổn định", "C. Giảm chi phí phần cứng", "D. Tăng tốc CPU"], dapAnDung: 1 }, // [cite: 9, 10]
-    { cauHoi: "Câu 4: Áp dụng công nghệ trong quản trị giúp:", luaChon: ["A. Giảm hiệu suất", "B. Tăng tự động hóa", "C. Tăng lỗi hệ thống", "D. Giảm bảo mật"], dapAnDung: 1 }, // [cite: 12, 13]
-    { cauHoi: "Câu 5: Một trong các vấn đề đạo đức trong quản trị hệ thống là:", luaChon: ["A. Tối ưu CPU", "B. Bảo mật thông tin người dùng", "C. Nâng cấp RAM", "D. Cài phần mềm"], dapAnDung: 1 }, // [cite: 15, 16]
-    { cauHoi: "Câu 6: Chiến lược quản trị hệ thống nhằm mục đích:", luaChon: ["A. Tăng số lượng server", "B. Quản lý hiệu quả tài nguyên", "C. Giảm số lượng user", "D. Tăng chi phí"], dapAnDung: 1 }, // [cite: 18, 19]
-    { cauHoi: "Câu 7: Nguyên lý quản trị hệ thống bao gồm:", luaChon: ["A. Ngẫu nhiên", "B. Có kế hoạch và kiểm soát", "C. Không cần bảo mật", "D. Không cần giám sát"], dapAnDung: 1 }, // [cite: 21, 22]
-    { cauHoi: "Câu 8: Quản trị viên cần có kỹ năng nào?", luaChon: ["A. Chỉ biết phần cứng", "B. Kỹ năng kỹ thuật và quản lý", "C. Chỉ biết lập trình", "D. Không cần kỹ năng"], dapAnDung: 1 }, // [cite: 24, 25]
-    { cauHoi: "Câu 9: Một hệ thống không được quản trị tốt sẽ:", luaChon: ["A. Ổn định hơn", "B. Dễ xảy ra lỗi và tấn công", "C. Nhanh hơn", "D. Rẻ hơn"], dapAnDung: 1 }, // [cite: 27, 28]
-    { cauHoi: "Câu 10: Quản trị hệ thống liên quan đến:", luaChon: ["A. Chỉ phần mềm", "B. Phần cứng + phần mềm + mạng", "C. Chỉ mạng", "D. Chỉ người dùng"], dapAnDung: 1 }, // [cite: 30, 31]
-    { cauHoi: "Câu 11: Quản trị hệ thống hiệu quả cần yếu tố nào quan trọng nhất?", luaChon: ["A. Phần cứng mạnh", "B. Quy trình quản lý rõ ràng", "C. Nhiều nhân viên", "D. Internet nhanh"], dapAnDung: 1 }, // [cite: 33, 34]
-    { cauHoi: "Câu 12: Trong môi trường doanh nghiệp, quản trị hệ thống giúp:", luaChon: ["A. Giảm số lượng user", "B. Đảm bảo dịch vụ liên tục", "C. Tăng chi phí vận hành", "D. Giảm bảo mật"], dapAnDung: 1 }, // [cite: 36, 37]
-    { cauHoi: "Câu 13: Một quản trị viên vi phạm đạo đức khi:", luaChon: ["A. Cập nhật hệ thống", "B. Truy cập trái phép dữ liệu người dùng", "C. Sao lưu dữ liệu", "D. Cấu hình firewall"], dapAnDung: 1 }, // [cite: 39, 40, 41]
-    { cauHoi: "Câu 14: Chiến lược quản trị nào giúp giảm downtime?", luaChon: ["A. Không backup", "B. Backup định kỳ", "C. Tắt server thường xuyên", "D. Không giám sát"], dapAnDung: 1 }, // [cite: 43, 44]
-    { cauHoi: "Câu 15: Nguyên lý “phòng ngừa hơn khắc phục” liên quan đến:", luaChon: ["A. Tối ưu CPU", "B. Bảo trì hệ thống", "C. Viết phần mềm", "D. Thiết kế mạng"], dapAnDung: 1 }, // [cite: 46, 47]
-    { cauHoi: "Câu 16: Một hệ thống áp dụng automation sẽ:", luaChon: ["A. Tăng lỗi thủ công", "B. Giảm sai sót cấu hình", "C. Giảm tốc độ", "D. Không cần quản trị"], dapAnDung: 1 }, // [cite: 49, 50]
-    { cauHoi: "Câu 17: Quản trị viên cần làm gì khi hệ thống bị tấn công?", luaChon: ["A. Bỏ qua", "B. Phát hiện và xử lý kịp thời", "C. Tắt mạng luôn", "D. Xóa dữ liệu"], dapAnDung: 1 }, // [cite: 52, 53]
-    { cauHoi: "Câu 18: Yếu tố nào KHÔNG thuộc vai trò quản trị viên?", luaChon: ["A. Giám sát hệ thống", "B. Bảo mật", "C. Lập trình game", "D. Quản lý user"], dapAnDung: 2 }, // [cite: 55, 56]
-    { cauHoi: "Câu 19: Quản trị hệ thống tốt giúp doanh nghiệp:", luaChon: ["A. Giảm hiệu quả", "B. Tăng độ tin cậy", "C. Tăng lỗi", "D. Giảm bảo mật"], dapAnDung: 1 }, // [cite: 58, 59]
-    { cauHoi: "Câu 30: Khi triển khai hệ thống, bước đầu tiên là:", luaChon: ["A. Mua server", "B. Lập kế hoạch", "C. Cài phần mềm", "D. Tạo user"], dapAnDung: 1 }, // [cite: 61, 62]
+    const danhSachCauHoi = [
+        // ==================== CHƯƠNG 1 ====================
+        { chuong: 1, loai: 'thuong', cauHoi: "Câu 1: Quản trị hệ thống mạng là gì?", luaChon: ["A. Thiết kế phần mềm", "B. Quản lý và vận hành hệ thống mạng", "C. Lập trình ứng dụng", "D. Thiết kế website"], dapAnDung: 1 },
+        { chuong: 1, loai: 'thuong', cauHoi: "Câu 2: Vai trò chính của quản trị viên hệ thống là:", luaChon: ["A. Viết code", "B. Quản lý người dùng và hệ thống", "C. Thiết kế game", "D. Marketing"], dapAnDung: 1 },
+        { chuong: 1, loai: 'thuong', cauHoi: "Câu 3: Mục tiêu của quản trị mạng là:", luaChon: ["A. Tăng số lượng người dùng", "B. Đảm bảo hệ thống hoạt động ổn định", "C. Giảm chi phí phần cứng", "D. Tăng tốc CPU"], dapAnDung: 1 },
+        { chuong: 1, loai: 'thuong', cauHoi: "Câu 4: Áp dụng công nghệ trong quản trị giúp:", luaChon: ["A. Giảm hiệu suất", "B. Tăng tự động hóa", "C. Tăng lỗi hệ thống", "D. Giảm bảo mật"], dapAnDung: 1 },
+        { chuong: 1, loai: 'thuong', cauHoi: "Câu 5: Một trong các vấn đề đạo đức trong quản trị hệ thống là:", luaChon: ["A. Tối ưu CPU", "B. Bảo mật thông tin người dùng", "C. Nâng cấp RAM", "D. Cài phần mềm"], dapAnDung: 1 },
+        { chuong: 1, loai: 'thuong', cauHoi: "Câu 6: Chiến lược quản trị hệ thống nhằm mục đích:", luaChon: ["A. Tăng số lượng server", "B. Quản lý hiệu quả tài nguyên", "C. Giảm số lượng user", "D. Tăng chi phí"], dapAnDung: 1 },
+        { chuong: 1, loai: 'thuong', cauHoi: "Câu 7: Nguyên lý quản trị hệ thống bao gồm:", luaChon: ["A. Ngẫu nhiên", "B. Có kế hoạch và kiểm soát", "C. Không cần bảo mật", "D. Không cần giám sát"], dapAnDung: 1 },
+        { chuong: 1, loai: 'thuong', cauHoi: "Câu 8: Quản trị viên cần có kỹ năng nào?", luaChon: ["A. Chỉ biết phần cứng", "B. Kỹ năng kỹ thuật và quản lý", "C. Chỉ biết lập trình", "D. Không cần kỹ năng"], dapAnDung: 1 },
+        { chuong: 1, loai: 'thuong', cauHoi: "Câu 9: Một hệ thống không được quản trị tốt sẽ:", luaChon: ["A. Ổn định hơn", "B. Dễ xảy ra lỗi và tấn công", "C. Nhanh hơn", "D. Rẻ hơn"], dapAnDung: 1 },
+        { chuong: 1, loai: 'thuong', cauHoi: "Câu 10: Quản trị hệ thống liên quan đến:", luaChon: ["A. Chỉ phần mềm", "B. Phần cứng + phần mềm + mạng", "C. Chỉ mạng", "D. Chỉ người dùng"], dapAnDung: 1 },
+        { chuong: 1, loai: 'thuong', cauHoi: "Câu 11: Quản trị hệ thống hiệu quả cần yếu tố nào quan trọng nhất?", luaChon: ["A. Phần cứng mạnh", "B. Quy trình quản lý rõ ràng", "C. Nhiều nhân viên", "D. Internet nhanh"], dapAnDung: 1 },
+        { chuong: 1, loai: 'thuong', cauHoi: "Câu 12: Trong môi trường doanh nghiệp, quản trị hệ thống giúp:", luaChon: ["A. Giảm số lượng user", "B. Đảm bảo dịch vụ liên tục", "C. Tăng chi phí vận hành", "D. Giảm bảo mật"], dapAnDung: 1 },
+        { chuong: 1, loai: 'thuong', cauHoi: "Câu 13: Một quản trị viên vi phạm đạo đức khi:", luaChon: ["A. Cập nhật hệ thống", "B. Truy cập trái phép dữ liệu người dùng", "C. Sao lưu dữ liệu", "D. Cấu hình firewall"], dapAnDung: 1 },
+        { chuong: 1, loai: 'thuong', cauHoi: "Câu 14: Chiến lược quản trị nào giúp giảm downtime?", luaChon: ["A. Không backup", "B. Backup định kỳ", "C. Tắt server thường xuyên", "D. Không giám sát"], dapAnDung: 1 },
+        { chuong: 1, loai: 'thuong', cauHoi: "Câu 15: Nguyên lý “phòng ngừa hơn khắc phục” liên quan đến:", luaChon: ["A. Tối ưu CPU", "B. Bảo trì hệ thống", "C. Viết phần mềm", "D. Thiết kế mạng"], dapAnDung: 1 },
+        { chuong: 1, loai: 'thuong', cauHoi: "Câu 16: Một hệ thống áp dụng automation sẽ:", luaChon: ["A. Tăng lỗi thủ công", "B. Giảm sai sót cấu hình", "C. Giảm tốc độ", "D. Không cần quản trị"], dapAnDung: 1 },
+        { chuong: 1, loai: 'thuong', cauHoi: "Câu 17: Quản trị viên cần làm gì khi hệ thống bị tấn công?", luaChon: ["A. Bỏ qua", "B. Phát hiện và xử lý kịp thời", "C. Tắt mạng luôn", "D. Xóa dữ liệu"], dapAnDung: 1 },
+        { chuong: 1, loai: 'thuong', cauHoi: "Câu 18: Yếu tố nào KHÔNG thuộc vai trò quản trị viên?", luaChon: ["A. Giám sát hệ thống", "B. Bảo mật", "C. Lập trình game", "D. Quản lý user"], dapAnDung: 2 },
+        { chuong: 1, loai: 'thuong', cauHoi: "Câu 19: Quản trị hệ thống tốt giúp doanh nghiệp:", luaChon: ["A. Giảm hiệu quả", "B. Tăng độ tin cậy", "C. Tăng lỗi", "D. Giảm bảo mật"], dapAnDung: 1 },
+        { chuong: 1, loai: 'thuong', cauHoi: "Câu 30: Khi triển khai hệ thống, bước đầu tiên là:", luaChon: ["A. Mua server", "B. Lập kế hoạch", "C. Cài phần mềm", "D. Tạo user"], dapAnDung: 1 },
+        
+        { chuong: 1, loai: 'diem_liet', cauHoi: "Câu 1 (Điểm liệt): Moe truy cập Stellacon Documents, có thể đọc tất cả tệp nhưng không thể thay đổi/xóa. Moe thuộc nhóm Sales & Finance. Bạn cần làm gì để cấp quyền tối thiểu?", luaChon: ["A. Cấp cho Sales quyền Full Control cho các quyền chia sẻ.", "B. Cấp cho Moe quyền Full Control cho bảo mật NTFS.", "C. Cấp cho Finance quyền Modify cho bảo mật NTFS.", "D. Cấp cho Moe quyền Modify cho bảo mật NTFS."], dapAnDung: 3 },
+        { chuong: 1, loai: 'diem_liet', cauHoi: "Câu 2 (Điểm liệt): Ổ cứng máy chủ tệp đang đầy, bạn không thể cài thêm. Bạn quyết định giới hạn dung lượng mà mọi người có. Cần triển khai gì?", luaChon: ["A. Phân bổ đĩa (Disk spacing)", "B. Hạn ngạch đĩa (Disk quotas)", "C. Làm cứng đĩa (Disk hardening)", "D. Giới hạn đĩa (Disk limitations)"], dapAnDung: 1 },
+        { chuong: 1, loai: 'diem_liet', cauHoi: "Câu 3 (Điểm liệt): Bạn cần cấp cho nhóm Admin quyền đọc, thay đổi và gán quyền. Chọn 2 phương án hợp lý từ các ý 1-5:", luaChon: ["A. 1, 2", "B. 2, 3", "C. 3, 4", "D. 3, 5 (Cấp Admin Full Control chia sẻ & Cấp Admin Full Control NTFS)"], dapAnDung: 3 },
+        { chuong: 1, loai: 'diem_liet', cauHoi: "Câu 4 (Điểm liệt): Bạn có thể sử dụng ứng dụng cấu hình từ xa nào để cấu hình Windows Server 2012 R2 Server Core?", luaChon: ["A. 1, 2", "B. 2, 3", "C. 1, 4", "D. 1, 3 (Windows Remote Management & Windows PowerShell)"], dapAnDung: 3 },
+        { chuong: 1, loai: 'diem_liet', cauHoi: "Câu 5 (Điểm liệt): Bạn thiết lập một máy chủ cho các vị trí thư mục chính của người dùng. Đó là loại máy chủ nào?", luaChon: ["A. Máy chủ PDC", "B. Máy chủ Web", "C. Máy chủ Exchange", "D. Máy chủ tệp (File server)"], dapAnDung: 3 },
 
-    // PHẦN II: CHƯƠNG 2
-    { cauHoi: "Câu 1: Hệ thống là gì?", luaChon: ["A. Tập hợp các thành phần độc lập", "B. Tập hợp các thành phần liên kết với nhau", "C. Chỉ gồm phần mềm", "D. Chỉ gồm phần cứng"], dapAnDung: 1 }, // [cite: 65, 66]
-    { cauHoi: "Câu 2: Thành phần phần cứng bao gồm:", luaChon: ["A. CPU, RAM, ổ cứng", "B. Hệ điều hành", "C. Ứng dụng", "D. Người dùng"], dapAnDung: 0 }, // [cite: 68, 69]
-    { cauHoi: "Câu 3: Hệ điều hành có chức năng:", luaChon: ["A. Chạy game", "B. Quản lý tài nguyên hệ thống", "C. Tăng tốc mạng", "D. Tạo website"], dapAnDung: 1 }, // [cite: 71, 72]
-    { cauHoi: "Câu 4: Hệ thống tập tin dùng để:", luaChon: ["A. Lưu trữ dữ liệu", "B. Tăng tốc CPU", "C. Quản lý mạng", "D. Điều khiển router"], dapAnDung: 0 }, // [cite: 74, 75]
-    { cauHoi: "Câu 5: Tiến trình là gì?", luaChon: ["A. File dữ liệu", "B. Chương trình đang chạy", "C. Phần cứng", "D. Người dùng"], dapAnDung: 1 }, // [cite: 77, 78]
-    { cauHoi: "Câu 6: Mạng máy tính giúp:", luaChon: ["A. Tăng RAM", "B. Kết nối các thiết bị", "C. Giảm CPU", "D. Tắt hệ thống"], dapAnDung: 1 }, // [cite: 80, 81]
-    { cauHoi: "Câu 7: IPv4 có đặc điểm:", luaChon: ["A. 32 bit", "B. 64 bit", "C. 128 bit", "D. 256 bit"], dapAnDung: 0 }, // [cite: 83, 84]
-    { cauHoi: "Câu 8: IPv6 có đặc điểm:", luaChon: ["A. 32 bit", "B. 64 bit", "C. 128 bit", "D. 16 bit"], dapAnDung: 2 }, // [cite: 85, 86]
-    { cauHoi: "Câu 9: Hệ điều hành Linux thuộc loại:", luaChon: ["A. Phần cứng", "B. Hệ điều hành", "C. Ứng dụng", "D. Mạng"], dapAnDung: 1 }, // [cite: 87, 88]
-    { cauHoi: "Câu 10: Thành phần nào điều khiển tiến trình?", luaChon: ["A. CPU", "B. Hệ điều hành", "C. RAM", "D. Ổ cứng"], dapAnDung: 1 }, // [cite: 90, 91]
-    { cauHoi: "Câu 11: Thành phần nào lưu trữ lâu dài dữ liệu?", luaChon: ["A. RAM", "B. CPU", "C. Ổ cứng", "D. Cache"], dapAnDung: 2 }, // [cite: 93, 94]
-    { cauHoi: "Câu 12: RAM có chức năng:", luaChon: ["A. Lưu trữ lâu dài", "B. Lưu trữ tạm thời", "C. Xử lý dữ liệu", "D. Kết nối mạng"], dapAnDung: 1 }, // [cite: 96, 97]
-    { cauHoi: "Câu 13: CPU có nhiệm vụ:", luaChon: ["A. Lưu file", "B. Xử lý lệnh", "C. Kết nối internet", "D. Quản lý user"], dapAnDung: 1 }, // [cite: 99, 100]
-    { cauHoi: "Câu 14: Hệ điều hành đóng vai trò trung gian giữa:", luaChon: ["A. Người dùng và phần cứng", "B. CPU và RAM", "C. Network và user", "D. File và ứng dụng"], dapAnDung: 0 }, // [cite: 102, 103]
-    { cauHoi: "Câu 15: Hệ thống tập tin NTFS thuộc:", luaChon: ["A. Phần cứng", "B. Hệ điều hành", "C. File system", "D. Mạng"], dapAnDung: 2 }, // [cite: 105, 106]
-    { cauHoi: "Câu 16: Một tiến trình có thể:", luaChon: ["A. Chỉ chạy 1 lần", "B. Chạy đồng thời với tiến trình khác", "C. Không dùng CPU", "D. Không dùng RAM"], dapAnDung: 1 }, // [cite: 108, 109]
-    { cauHoi: "Câu 17: Địa chỉ IPv4 có dạng:", luaChon: ["A. 4 số thập phân", "B. 8 số thập phân", "C. 6 số", "D. 16 số"], dapAnDung: 0 }, // [cite: 111, 112]
-    { cauHoi: "Câu 18: Ưu điểm của IPv6 là:", luaChon: ["A. Ít địa chỉ hơn", "B. Không bảo mật", "C. Không cần mạng", "D. Không gian địa chỉ lớn"], dapAnDung: 3 }, // [cite: 114, 115]
-    { cauHoi: "Câu 19: Thiết bị nào dùng để kết nối mạng?", luaChon: ["A. CPU", "B. Switch", "C. RAM", "D. HDD"], dapAnDung: 1 }, // [cite: 117, 118]
-    { cauHoi: "Câu 20: Hệ điều hành nào phổ biến trong server?", luaChon: ["A. Windows Server / Linux", "B. Android", "C. iOS", "D. Game OS"], dapAnDung: 0 }, // [cite: 119, 120]
+        // ==================== CHƯƠNG 2 ====================
+        { chuong: 2, loai: 'thuong', cauHoi: "Câu 1: Hệ thống là gì?", luaChon: ["A. Tập hợp các thành phần độc lập", "B. Tập hợp các thành phần liên kết với nhau", "C. Chỉ gồm phần mềm", "D. Chỉ gồm phần cứng"], dapAnDung: 1 },
+        { chuong: 2, loai: 'thuong', cauHoi: "Câu 2: Thành phần phần cứng bao gồm:", luaChon: ["A. CPU, RAM, ổ cứng", "B. Hệ điều hành", "C. Ứng dụng", "D. Người dùng"], dapAnDung: 0 },
+        { chuong: 2, loai: 'thuong', cauHoi: "Câu 3: Hệ điều hành có chức năng:", luaChon: ["A. Chạy game", "B. Quản lý tài nguyên hệ thống", "C. Tăng tốc mạng", "D. Tạo website"], dapAnDung: 1 },
+        { chuong: 2, loai: 'thuong', cauHoi: "Câu 4: Hệ thống tập tin dùng để:", luaChon: ["A. Lưu trữ dữ liệu", "B. Tăng tốc CPU", "C. Quản lý mạng", "D. Điều khiển router"], dapAnDung: 0 },
+        { chuong: 2, loai: 'thuong', cauHoi: "Câu 5: Tiến trình là gì?", luaChon: ["A. File dữ liệu", "B. Chương trình đang chạy", "C. Phần cứng", "D. Người dùng"], dapAnDung: 1 },
+        { chuong: 2, loai: 'thuong', cauHoi: "Câu 6: Mạng máy tính giúp:", luaChon: ["A. Tăng RAM", "B. Kết nối các thiết bị", "C. Giảm CPU", "D. Tắt hệ thống"], dapAnDung: 1 },
+        { chuong: 2, loai: 'thuong', cauHoi: "Câu 7: IPv4 có đặc điểm:", luaChon: ["A. 32 bit", "B. 64 bit", "C. 128 bit", "D. 256 bit"], dapAnDung: 0 },
+        { chuong: 2, loai: 'thuong', cauHoi: "Câu 8: IPv6 có đặc điểm:", luaChon: ["A. 32 bit", "B. 64 bit", "C. 128 bit", "D. 16 bit"], dapAnDung: 2 },
+        { chuong: 2, loai: 'thuong', cauHoi: "Câu 9: Hệ điều hành Linux thuộc loại:", luaChon: ["A. Phần cứng", "B. Hệ điều hành", "C. Ứng dụng", "D. Mạng"], dapAnDung: 1 },
+        { chuong: 2, loai: 'thuong', cauHoi: "Câu 10: Thành phần nào điều khiển tiến trình?", luaChon: ["A. CPU", "B. Hệ điều hành", "C. RAM", "D. Ổ cứng"], dapAnDung: 1 },
+        { chuong: 2, loai: 'thuong', cauHoi: "Câu 11: Thành phần nào lưu trữ lâu dài dữ liệu?", luaChon: ["A. RAM", "B. CPU", "C. Ổ cứng", "D. Cache"], dapAnDung: 2 },
+        { chuong: 2, loai: 'thuong', cauHoi: "Câu 12: RAM có chức năng:", luaChon: ["A. Lưu trữ lâu dài", "B. Lưu trữ tạm thời", "C. Xử lý dữ liệu", "D. Kết nối mạng"], dapAnDung: 1 },
+        { chuong: 2, loai: 'thuong', cauHoi: "Câu 13: CPU có nhiệm vụ:", luaChon: ["A. Lưu file", "B. Xử lý lệnh", "C. Kết nối internet", "D. Quản lý user"], dapAnDung: 1 },
+        { chuong: 2, loai: 'thuong', cauHoi: "Câu 14: Hệ điều hành đóng vai trò trung gian giữa:", luaChon: ["A. Người dùng và phần cứng", "B. CPU và RAM", "C. Network và user", "D. File và ứng dụng"], dapAnDung: 0 },
+        { chuong: 2, loai: 'thuong', cauHoi: "Câu 15: Hệ thống tập tin NTFS thuộc:", luaChon: ["A. Phần cứng", "B. Hệ điều hành", "C. File system", "D. Mạng"], dapAnDung: 2 },
+        { chuong: 2, loai: 'thuong', cauHoi: "Câu 16: Một tiến trình có thể:", luaChon: ["A. Chỉ chạy 1 lần", "B. Chạy đồng thời với tiến trình khác", "C. Không dùng CPU", "D. Không dùng RAM"], dapAnDung: 1 },
+        { chuong: 2, loai: 'thuong', cauHoi: "Câu 17: Địa chỉ IPv4 có dạng:", luaChon: ["A. 4 số thập phân", "B. 8 số thập phân", "C. 6 số", "D. 16 số"], dapAnDung: 0 },
+        { chuong: 2, loai: 'thuong', cauHoi: "Câu 18: Ưu điểm của IPv6 là:", luaChon: ["A. Ít địa chỉ hơn", "B. Không bảo mật", "C. Không cần mạng", "D. Không gian địa chỉ lớn"], dapAnDung: 3 },
+        { chuong: 2, loai: 'thuong', cauHoi: "Câu 19: Thiết bị nào dùng để kết nối mạng?", luaChon: ["A. CPU", "B. Switch", "C. RAM", "D. HDD"], dapAnDung: 1 },
+        { chuong: 2, loai: 'thuong', cauHoi: "Câu 20: Hệ điều hành nào phổ biến trong server?", luaChon: ["A. Windows Server / Linux", "B. Android", "C. iOS", "D. Game OS"], dapAnDung: 0 },
 
-    // CHƯƠNG 3
-    { cauHoi: "Câu 1: Quản trị máy chủ là gì?", luaChon: ["A. Lập trình phần mềm", "B. Quản lý và vận hành server", "C. Thiết kế web", "D. Sửa lỗi phần mềm"], dapAnDung: 1 }, // [cite: 123, 124]
-    { cauHoi: "Câu 2: Máy chủ (server) có chức năng chính là:", luaChon: ["A. Chơi game", "B. Cung cấp dịch vụ cho client", "C. Soạn thảo văn bản", "D. Lưu file cá nhân"], dapAnDung: 1 }, // [cite: 126, 127]
-    { cauHoi: "Câu 3: Phòng máy chủ cần đảm bảo yếu tố nào?", luaChon: ["A. Nhiệt độ ổn định", "B. Không cần điều hòa", "C. Ánh sáng mạnh", "D. Không cần bảo mật"], dapAnDung: 0 }, // [cite: 129, 130]
-    { cauHoi: "Câu 4: Thiết bị nào quan trọng trong phòng server?", luaChon: ["A. UPS", "B. Loa", "C. Webcam", "D. Chuột"], dapAnDung: 0 }, // [cite: 132]
-    { cauHoi: "Câu 5: UPS có chức năng:", luaChon: ["A. Tăng tốc CPU", "B. Cung cấp điện dự phòng", "C. Kết nối mạng", "D. Lưu trữ dữ liệu"], dapAnDung: 1 }, // [cite: 134, 135]
-    { cauHoi: "Câu 6: Khi khởi động server cần:", luaChon: ["A. Tắt nguồn đột ngột", "B. Thực hiện đúng quy trình", "C. Rút điện", "D. Không cần kiểm tra"], dapAnDung: 1 }, // [cite: 137, 138]
-    { cauHoi: "Câu 7: Tắt máy chủ đúng cách giúp:", luaChon: ["A. Tăng lỗi", "B. Tránh mất dữ liệu", "C. Giảm RAM", "D. Tăng CPU"], dapAnDung: 1 }, // [cite: 140, 141]
-    { cauHoi: "Câu 8: Cấu hình máy trạm nhằm mục đích:", luaChon: ["A. Giảm hiệu năng", "B. Kết nối và sử dụng tài nguyên server", "C. Tắt mạng", "D. Xóa dữ liệu"], dapAnDung: 1 }, // [cite: 143, 144]
-    { cauHoi: "Câu 9: Hệ điều hành server phổ biến:", luaChon: ["A. Windows Server", "B. Android", "C. iOS", "D. DOS"], dapAnDung: 0 }, // [cite: 146]
-    { cauHoi: "Câu 10: Unix/Linux thường được dùng cho:", luaChon: ["A. Game", "B. Server", "C. Thiết kế đồ họa", "D. Mobile"], dapAnDung: 1 }, // [cite: 148]
-    { cauHoi: "Câu 11: Cài đặt hệ điều hành cần:", luaChon: ["A. Không cần chuẩn bị", "B. Chuẩn bị ổ đĩa và cấu hình", "C. Tắt nguồn", "D. Xóa RAM"], dapAnDung: 1 }, // [cite: 150, 151]
-    { cauHoi: "Câu 12: Phần mềm trên server cần:", luaChon: ["A. Cài tùy ý", "B. Phù hợp mục đích sử dụng", "C. Càng nhiều càng tốt", "D. Không cần cài"], dapAnDung: 1 }, // [cite: 153, 154]
-    { cauHoi: "Câu 13: Tùy chỉnh kernel (nhân hệ điều hành) nhằm:", luaChon: ["A. Tăng lỗi", "B. Tối ưu hệ thống", "C. Giảm hiệu năng", "D. Xóa dữ liệu"], dapAnDung: 1 }, // [cite: 156, 157]
-    { cauHoi: "Câu 14: Một server cần backup dữ liệu để:", luaChon: ["A. Giảm dung lượng", "B. Khôi phục khi sự cố", "C. Tăng lỗi", "D. Giảm bảo mật"], dapAnDung: 1 }, // [cite: 159, 160]
-    { cauHoi: "Câu 15: Thiết bị lưu trữ trong server gồm:", luaChon: ["A. RAM", "B. HDD/SSD", "C. CPU", "D. GPU"], dapAnDung: 1 }, // [cite: 162]
-    { cauHoi: "Câu 16: Máy chủ cần có:", luaChon: ["A. Hiệu năng cao", "B. RAM thấp", "C. Không cần mạng", "D. Không cần bảo mật"], dapAnDung: 0 }, // [cite: 164, 165]
-    { cauHoi: "Câu 17: Cấu hình RAID giúp:", luaChon: ["A. Tăng lỗi", "B. Tăng độ an toàn dữ liệu", "C. Giảm dung lượng", "D. Giảm tốc độ"], dapAnDung: 1 }, // [cite: 167, 168]
-    { cauHoi: "Câu 18: Quản trị server cần theo dõi:", luaChon: ["A. CPU, RAM, Disk", "B. Chuột", "C. Loa", "D. Màn hình"], dapAnDung: 0 }, // [cite: 170]
-    { cauHoi: "Câu 19: Một server bị quá tải sẽ:", luaChon: ["A. Chạy nhanh hơn", "B. Giảm hiệu năng", "C. Tăng RAM", "D. Tự sửa lỗi"], dapAnDung: 1 }, // [cite: 172, 173]
-    { cauHoi: "Câu 20: Cập nhật hệ thống giúp:", luaChon: ["A. Giảm bảo mật", "B. Vá lỗi và tăng bảo mật", "C. Tăng lỗi", "D. Không cần thiết"], dapAnDung: 1 }, // [cite: 175, 176]
+        { chuong: 2, loai: 'diem_liet', cauHoi: "Câu 1 (Điểm liệt): Nhận thông báo lỗi “Thuộc tính phân loại đang được sử dụng...”. Bạn cần xóa thuộc tính phân loại Chứa Thông tin Cá nhân. Nên làm gì?", luaChon: ["A. Xóa giá trị thuộc tính cho tất cả tệp.", "B. Xóa quy tắc phân loại được gán thuộc tính đó.", "C. Vô hiệu hóa quy tắc phân loại.", "D. Đặt các tệp có giá trị thuộc tính là Có thành Không."], dapAnDung: 1 },
+        { chuong: 2, loai: 'diem_liet', cauHoi: "Câu 2 (Điểm liệt): Tải trước dữ liệu vào bộ đệm BranchCache trên FS02. Bạn đã tạo các hàm băm cho các chia sẻ tệp trên FS01. Chạy cmdlet nào tiếp theo?", luaChon: ["A. Export-BCCachePackage", "B. Publish-BCFileContent", "C. Set-BCCache", "D. Add-BCDataCacheExtension"], dapAnDung: 1 },
+        { chuong: 2, loai: 'diem_liet', cauHoi: "Câu 3 (Điểm liệt): Yêu cầu: Ghi lại truy cập/sửa đổi tệp nhạy cảm, có thể cung cấp thông tin người dùng và ghi lại lần thử đăng nhập dùng chung. Thực hiện các bước:", luaChon: ["A. 1, 2, 3, 4", "B. 5, 6, 7, 8", "C. 1, 2, 7, 8", "D. 2, 5, 7, 8 (Bật kiểm toán qua GPO, Xem qua Event Viewer, Cài đặt kiểm toán tệp, Cài đặt kiểm toán đăng nhập)"], dapAnDung: 3 },
+        { chuong: 2, loai: 'diem_liet', cauHoi: "Câu 4 (Điểm liệt): Tạo chia sẻ và dùng NET USE kiểm tra thấy ổn. Hôm sau người dùng gọi nói không thể thấy tài nguyên. Lý do?", luaChon: ["A. Bạn quên bật NetBIOS.", "B. xuất", "C. Bạn cần xuất bản các chia sẻ trong thư mục (Active Directory).", "D. Các chia sẻ sẽ xuất hiện sau thời gian sao chép."], dapAnDung: 2 },
+        { chuong: 2, loai: 'diem_liet', cauHoi: "Câu 5 (Điểm liệt): Địa chỉ IPv6 là FE80::0203:FFFF:FE11:2CD. Bạn có thể biết được gì?", luaChon: ["A. 1, 2", "B. 3, 4", "C. 4, 5", "D. 2, 4 (Là địa chỉ liên kết cục bộ & EUI-64 cho thấy MAC)"], dapAnDung: 3 },
+        { chuong: 2, loai: 'diem_liet', cauHoi: "Câu 6 (Điểm liệt): Môi trường sử dụng bộ nhớ iSCSI. Các quản trị viên báo khó định vị tài nguyên. Triển khai tính năng nào để dùng kho lưu trữ tập trung?", luaChon: ["A. Nhà cung cấp Lưu trữ Đích iSCSI", "B. Quản lý Lưu trữ Dựa trên Tiêu chuẩn của Windows", "C. Máy chủ Đích iSCSI", "D. Dịch vụ Máy chủ iSNS"], dapAnDung: 3 },
 
-    // CHƯƠNG 4
-    { cauHoi: "Câu 1: Quản trị người dùng là gì?", luaChon: ["A. Quản lý phần cứng", "B. Quản lý tài khoản và quyền truy cập", "C. Lập trình ứng dụng", "D. Thiết kế mạng"], dapAnDung: 1 }, // [cite: 179, 180]
-    { cauHoi: "Câu 2: User account dùng để:", luaChon: ["A. Tắt máy", "B. Xác thực người dùng", "C. Tăng RAM", "D. Kết nối mạng"], dapAnDung: 1 }, // [cite: 182, 183]
-    { cauHoi: "Câu 3: Username và password dùng cho:", luaChon: ["A. Lưu trữ dữ liệu", "B. Xác thực đăng nhập", "C. Tăng tốc hệ thống", "D. Cài phần mềm"], dapAnDung: 1 }, // [cite: 185, 186]
-    { cauHoi: "Câu 4: Chính sách tài khoản giúp:", luaChon: ["A. Giảm bảo mật", "B. Tăng bảo mật hệ thống", "C. Tăng lỗi", "D. Giảm hiệu năng"], dapAnDung: 1 }, // [cite: 188, 189]
-    { cauHoi: "Câu 5: Một mật khẩu mạnh nên:", luaChon: ["A. Ngắn, dễ nhớ", "B. Có chữ hoa, chữ thường, số, ký tự đặc biệt", "C. Chỉ có số", "D. Giống username"], dapAnDung: 1 }, // [cite: 191, 192]
-    { cauHoi: "Câu 6: Quyền truy cập (permission) dùng để:", luaChon: ["A. Tăng tốc CPU", "B. Kiểm soát tài nguyên", "C. Tắt hệ thống", "D. Xóa dữ liệu"], dapAnDung: 1 }, // [cite: 194, 195]
-    { cauHoi: "Câu 7: User thuộc nhóm (group) giúp:", luaChon: ["A. Giảm quản lý", "B. Quản lý quyền dễ dàng hơn", "C. Tăng lỗi", "D. Giảm bảo mật"], dapAnDung: 1 }, // [cite: 197, 198]
-    { cauHoi: "Câu 8: Môi trường đăng nhập (login environment) là:", luaChon: ["A. Phần cứng", "B. Giao diện và thiết lập khi user đăng nhập", "C. Ổ cứng", "D. CPU"], dapAnDung: 1 }, // [cite: 200, 201]
-    { cauHoi: "Câu 9: Dịch vụ hỗ trợ người dùng gồm:", luaChon: ["A. DNS", "B. Email, file sharing", "C. CPU", "D. RAM"], dapAnDung: 1 }, // [cite: 203]
-    { cauHoi: "Câu 10: Giới hạn tài nguyên user giúp:", luaChon: ["A. Tăng lỗi", "B. Tránh lạm dụng tài nguyên", "C. Giảm bảo mật", "D. Tắt hệ thống"], dapAnDung: 1 }, // [cite: 205, 206]
-    { cauHoi: "Câu 11: Một user không nên có:", luaChon: ["A. Quyền phù hợp", "B. Quyền quá cao (admin) khi không cần", "C. Tài khoản riêng", "D. Password"], dapAnDung: 1 }, // [cite: 208, 209]
-    { cauHoi: "Câu 12: Chính sách khóa tài khoản giúp:", luaChon: ["A. Tăng lỗi", "B. Ngăn truy cập trái phép", "C. Giảm bảo mật", "D. Tăng CPU"], dapAnDung: 1 }, // [cite: 211, 212]
-    { cauHoi: "Câu 13: Single Sign-On (SSO) là:", luaChon: ["A. Đăng nhập nhiều lần", "B. Đăng nhập một lần dùng nhiều dịch vụ", "C. Không cần đăng nhập", "D. Xóa user"], dapAnDung: 1 }, // [cite: 214, 215]
-    { cauHoi: "Câu 14: Quản lý user trong domain giúp:", luaChon: ["A. Phân tán quản lý", "B. Quản lý tập trung", "C. Giảm bảo mật", "D. Tăng lỗi"], dapAnDung: 1 }, // [cite: 217, 218]
-    { cauHoi: "Câu 15: Tài khoản guest thường:", luaChon: ["A. Có quyền cao", "B. Quyền hạn chế", "C. Là admin", "D. Không tồn tại"], dapAnDung: 1 }, // [cite: 220, 221]
-    { cauHoi: "Câu 16: Audit (kiểm tra) user dùng để:", luaChon: ["A. Xóa user", "B. Theo dõi hoạt động", "C. Tăng RAM", "D. Tắt hệ thống"], dapAnDung: 1 }, // [cite: 223, 224]
-    { cauHoi: "Câu 17: Quản trị user cần đảm bảo:", luaChon: ["A. Không bảo mật", "B. Nguyên tắc least privilege", "C. Cho quyền tối đa", "D. Không cần password"], dapAnDung: 1 }, // [cite: 226, 227]
-    { cauHoi: "Câu 18: Least privilege nghĩa là:", luaChon: ["A. Quyền cao nhất", "B. Quyền vừa đủ cần thiết", "C. Không có quyền", "D. Tất cả quyền"], dapAnDung: 1 }, // [cite: 229, 230]
-    { cauHoi: "Câu 19: Dịch vụ người dùng trực tuyến gồm:", luaChon: ["A. Email, cloud storage", "B. CPU", "C. RAM", "D. BIOS"], dapAnDung: 0 }, // [cite: 232]
-    { cauHoi: "Câu 20: Một hệ thống quản lý user tốt sẽ:", luaChon: ["A. Dễ bị tấn công", "B. An toàn và dễ quản lý", "C. Chậm hơn", "D. Tăng lỗi"], dapAnDung: 1 }, // [cite: 234, 235]
+        // ==================== CHƯƠNG 3 ====================
+        { chuong: 3, loai: 'thuong', cauHoi: "Câu 1: Quản trị máy chủ là gì?", luaChon: ["A. Lập trình phần mềm", "B. Quản lý và vận hành server", "C. Thiết kế web", "D. Sửa lỗi phần mềm"], dapAnDung: 1 },
+        { chuong: 3, loai: 'thuong', cauHoi: "Câu 2: Máy chủ (server) có chức năng chính là:", luaChon: ["A. Chơi game", "B. Cung cấp dịch vụ cho client", "C. Soạn thảo văn bản", "D. Lưu file cá nhân"], dapAnDung: 1 },
+        { chuong: 3, loai: 'thuong', cauHoi: "Câu 3: Phòng máy chủ cần đảm bảo yếu tố nào?", luaChon: ["A. Nhiệt độ ổn định", "B. Không cần điều hòa", "C. Ánh sáng mạnh", "D. Không cần bảo mật"], dapAnDung: 0 },
+        { chuong: 3, loai: 'thuong', cauHoi: "Câu 4: Thiết bị nào quan trọng trong phòng server?", luaChon: ["A. UPS", "B. Loa", "C. Webcam", "D. Chuột"], dapAnDung: 0 },
+        { chuong: 3, loai: 'thuong', cauHoi: "Câu 5: UPS có chức năng:", luaChon: ["A. Tăng tốc CPU", "B. Cung cấp điện dự phòng", "C. Kết nối mạng", "D. Lưu trữ dữ liệu"], dapAnDung: 1 },
+        { chuong: 3, loai: 'thuong', cauHoi: "Câu 6: Khi khởi động server cần:", luaChon: ["A. Tắt nguồn đột ngột", "B. Thực hiện đúng quy trình", "C. Rút điện", "D. Không cần kiểm tra"], dapAnDung: 1 },
+        { chuong: 3, loai: 'thuong', cauHoi: "Câu 7: Tắt máy chủ đúng cách giúp:", luaChon: ["A. Tăng lỗi", "B. Tránh mất dữ liệu", "C. Giảm RAM", "D. Tăng CPU"], dapAnDung: 1 },
+        { chuong: 3, loai: 'thuong', cauHoi: "Câu 8: Cấu hình máy trạm nhằm mục đích:", luaChon: ["A. Giảm hiệu năng", "B. Kết nối và sử dụng tài nguyên server", "C. Tắt mạng", "D. Xóa dữ liệu"], dapAnDung: 1 },
+        { chuong: 3, loai: 'thuong', cauHoi: "Câu 9: Hệ điều hành server phổ biến:", luaChon: ["A. Windows Server", "B. Android", "C. iOS", "D. DOS"], dapAnDung: 0 },
+        { chuong: 3, loai: 'thuong', cauHoi: "Câu 10: Unix/Linux thường được dùng cho:", luaChon: ["A. Game", "B. Server", "C. Thiết kế đồ họa", "D. Mobile"], dapAnDung: 1 },
+        { chuong: 3, loai: 'thuong', cauHoi: "Câu 11: Cài đặt hệ điều hành cần:", luaChon: ["A. Không cần chuẩn bị", "B. Chuẩn bị ổ đĩa và cấu hình", "C. Tắt nguồn", "D. Xóa RAM"], dapAnDung: 1 },
+        { chuong: 3, loai: 'thuong', cauHoi: "Câu 12: Phần mềm trên server cần:", luaChon: ["A. Cài tùy ý", "B. Phù hợp mục đích sử dụng", "C. Càng nhiều càng tốt", "D. Không cần cài"], dapAnDung: 1 },
+        { chuong: 3, loai: 'thuong', cauHoi: "Câu 13: Tùy chỉnh kernel (nhân hệ điều hành) nhằm:", luaChon: ["A. Tăng lỗi", "B. Tối ưu hệ thống", "C. Giảm hiệu năng", "D. Xóa dữ liệu"], dapAnDung: 1 },
+        { chuong: 3, loai: 'thuong', cauHoi: "Câu 14: Một server cần backup dữ liệu để:", luaChon: ["A. Giảm dung lượng", "B. Khôi phục khi sự cố", "C. Tăng lỗi", "D. Giảm bảo mật"], dapAnDung: 1 },
+        { chuong: 3, loai: 'thuong', cauHoi: "Câu 15: Thiết bị lưu trữ trong server gồm:", luaChon: ["A. RAM", "B. HDD/SSD", "C. CPU", "D. GPU"], dapAnDung: 1 },
+        { chuong: 3, loai: 'thuong', cauHoi: "Câu 16: Máy chủ cần có:", luaChon: ["A. Hiệu năng cao", "B. RAM thấp", "C. Không cần mạng", "D. Không cần bảo mật"], dapAnDung: 0 },
+        { chuong: 3, loai: 'thuong', cauHoi: "Câu 17: Cấu hình RAID giúp:", luaChon: ["A. Tăng lỗi", "B. Tăng độ an toàn dữ liệu", "C. Giảm dung lượng", "D. Giảm tốc độ"], dapAnDung: 1 },
+        { chuong: 3, loai: 'thuong', cauHoi: "Câu 18: Quản trị server cần theo dõi:", luaChon: ["A. CPU, RAM, Disk", "B. Chuột", "C. Loa", "D. Màn hình"], dapAnDung: 0 },
+        { chuong: 3, loai: 'thuong', cauHoi: "Câu 19: Một server bị quá tải sẽ:", luaChon: ["A. Chạy nhanh hơn", "B. Giảm hiệu năng", "C. Tăng RAM", "D. Tự sửa lỗi"], dapAnDung: 1 },
+        { chuong: 3, loai: 'thuong', cauHoi: "Câu 20: Cập nhật hệ thống giúp:", luaChon: ["A. Giảm bảo mật", "B. Vá lỗi và tăng bảo mật", "C. Tăng lỗi", "D. Không cần thiết"], dapAnDung: 1 },
 
-    // CHƯƠNG 5
-    { cauHoi: "Câu 1: Dịch vụ thư mục (Directory Service) dùng để:", luaChon: ["A. Tăng tốc CPU", "B. Lưu trữ và quản lý thông tin tài nguyên", "C. Kết nối mạng", "D. Chạy ứng dụng"], dapAnDung: 1 }, // [cite: 238, 239]
-    { cauHoi: "Câu 2: Ví dụ của dịch vụ thư mục là:", luaChon: ["A. DNS", "B. Active Directory", "C. HTTP", "D. FTP"], dapAnDung: 1 }, // [cite: 241]
-    { cauHoi: "Câu 3: LDAP là:", luaChon: ["A. Giao thức truyền file", "B. Giao thức truy cập dịch vụ thư mục", "C. Giao thức định tuyến", "D. Giao thức web"], dapAnDung: 1 }, // [cite: 243, 244]
-    { cauHoi: "Câu 4: Kiến trúc Client-Server có đặc điểm:", luaChon: ["A. Không có server", "B. Quản lý tập trung", "C. Không có client", "D. Phân tán hoàn toàn"], dapAnDung: 1 }, // [cite: 246, 247]
-    { cauHoi: "Câu 5: Mô hình Peer-to-Peer có đặc điểm:", luaChon: ["A. Tập trung", "B. Không có server trung tâm", "C. Chỉ có server", "D. Không có mạng"], dapAnDung: 1 }, // [cite: 249, 250]
-    { cauHoi: "Câu 6: Cloud Computing cho phép:", luaChon: ["A. Không cần internet", "B. Truy cập tài nguyên từ xa", "C. Giảm bảo mật", "D. Tắt hệ thống"], dapAnDung: 1 }, // [cite: 252, 253]
-    { cauHoi: "Câu 7: Mô hình Hybrid là:", luaChon: ["A. Chỉ cloud", "B. Kết hợp nhiều mô hình", "C. Chỉ on-premise", "D. Không có server"], dapAnDung: 1 }, // [cite: 255, 256]
-    { cauHoi: "Câu 8: Mô hình FCAPS gồm bao nhiêu thành phần?", luaChon: ["A. 3", "B. 4", "C. 5", "D. 6"], dapAnDung: 2 }, // [cite: 258]
-    { cauHoi: "Câu 9: Trong FCAPS, chữ “F” là:", luaChon: ["A. File", "B. Fault", "C. Fast", "D. Function"], dapAnDung: 1 }, // [cite: 260]
-    { cauHoi: "Câu 10: SNMP dùng để:", luaChon: ["A. Lập trình", "B. Quản lý và giám sát mạng", "C. Thiết kế web", "D. Lưu trữ dữ liệu"], dapAnDung: 1 }, // [cite: 262, 263]
-    { cauHoi: "Câu 11: Syslog dùng để:", luaChon: ["A. Tăng tốc CPU", "B. Ghi log hệ thống", "C. Kết nối mạng", "D. Tạo user"], dapAnDung: 1 }, // [cite: 265, 266]
-    { cauHoi: "Câu 12: Công cụ Zabbix dùng để:", luaChon: ["A. Lập trình", "B. Giám sát hệ thống", "C. Thiết kế mạng", "D. Chạy game"], dapAnDung: 1 }, // [cite: 268, 269]
-    { cauHoi: "Câu 13: Hạ tầng mạng bao gồm:", luaChon: ["A. Server, switch, router", "B. Chỉ CPU", "C. Chỉ RAM", "D. Chỉ phần mềm"], dapAnDung: 0 }, // [cite: 271, 272]
-    { cauHoi: "Câu 14: Firewall dùng để:", luaChon: ["A. Tăng tốc mạng", "B. Bảo mật mạng", "C. Lưu dữ liệu", "D. Chạy ứng dụng"], dapAnDung: 1 }, // [cite: 274, 275]
-    { cauHoi: "Câu 15: Triển khai On-Premise nghĩa là:", luaChon: ["A. Dùng cloud", "B. Triển khai tại chỗ", "C. Không cần server", "D. Không cần mạng"], dapAnDung: 1 }, // [cite: 277, 278]
-    { cauHoi: "Câu 16: Tự động hóa cấu hình giúp:", luaChon: ["A. Tăng lỗi", "B. Giảm thao tác thủ công", "C. Giảm bảo mật", "D. Tăng chi phí"], dapAnDung: 1 }, // [cite: 280, 281]
-    { cauHoi: "Câu 17: Công cụ Ansible dùng để:", luaChon: ["A. Lập trình game", "B. Tự động hóa cấu hình", "C. Thiết kế web", "D. Tạo database"], dapAnDung: 1 }, // [cite: 283, 284]
-    { cauHoi: "Câu 18: PowerShell thường dùng trong:", luaChon: ["A. Linux", "B. Windows", "C. Mobile", "D. Game"], dapAnDung: 1 }, // [cite: 286]
-    { cauHoi: "Câu 19: Tự động hóa giúp:", luaChon: ["A. Tăng thời gian", "B. Tăng độ chính xác", "C. Giảm hiệu quả", "D. Tăng lỗi"], dapAnDung: 1 }, // [cite: 288, 289]
-    { cauHoi: "Câu 20: Một hệ thống quản trị tốt cần:", luaChon: ["A. Không giám sát", "B. Có kế hoạch và tự động hóa", "C. Không bảo mật", "D. Không backup"], dapAnDung: 1 }, // [cite: 291, 292]
+        { chuong: 3, loai: 'diem_liet', cauHoi: "Câu 1 (Điểm liệt): Kiểm tra máy chủ WSUS trước khi thiết lập GPO. Mục đăng ký nào cần thực hiện cho máy khách?", luaChon: ["A. UseWUServer = 0, WUServer = http://WSUSServer", "B. UseWUServer = 1, WUServer = http://WSUSServer", "C. UseWUServer = WSUSServer, WUServer = WSUSServer", "D. Cả 2 đều sai"], dapAnDung: 1 },
+        { chuong: 3, loai: 'diem_liet', cauHoi: "Câu 2 (Điểm liệt): Nhân viên di động ngắt kết nối từ 6h tối - 7h sáng. Đảm bảo cập nhật với tương tác tối thiểu. Bạn nên làm gì trên Automatic Updates?", luaChon: ["A. 1, 2, 3", "B. 4, 5, 6", "C. 2, 3, 4", "D. 2, 4, 6 (Tự động tải/cài theo lịch, Giữ máy cập nhật, Đặt giờ trưa 12h)"], dapAnDung: 3 },
 
-    // CHƯƠNG 6
-    { cauHoi: "Câu 1: Chính sách cấu hình hệ thống dùng để:", luaChon: ["A. Tăng tốc CPU", "B. Chuẩn hóa cấu hình hệ thống", "C. Xóa dữ liệu", "D. Tắt mạng"], dapAnDung: 1 }, // [cite: 295, 296]
-    { cauHoi: "Câu 2: Mục tiêu của quản lý cấu hình là:", luaChon: ["A. Tăng lỗi", "B. Đảm bảo hệ thống ổn định", "C. Giảm bảo mật", "D. Tăng chi phí"], dapAnDung: 1 }, // [cite: 298, 299]
-    { cauHoi: "Câu 3: Thay đổi cấu hình cần:", luaChon: ["A. Làm tự do", "B. Có kiểm soát và ghi log", "C. Không cần kiểm tra", "D. Không cần backup"], dapAnDung: 1 }, // [cite: 301, 302]
-    { cauHoi: "Câu 4: Ngôn ngữ khai báo (Declarative) là:", luaChon: ["A. Chỉ định cách thực hiện", "B. Chỉ định trạng thái mong muốn", "C. Không dùng trong IT", "D. Chỉ dùng lập trình game"], dapAnDung: 1 }, // [cite: 304, 305]
-    { cauHoi: "Câu 5: Ví dụ công cụ cấu hình declarative:", luaChon: ["A. Ansible", "B. Word", "C. Excel", "D. Paint"], dapAnDung: 0 }, // [cite: 307]
-    { cauHoi: "Câu 6: Cấu hình chính sách giúp:", luaChon: ["A. Giảm bảo mật", "B. Đồng bộ hệ thống", "C. Tăng lỗi", "D. Giảm hiệu năng"], dapAnDung: 1 }, // [cite: 309, 310]
-    { cauHoi: "Câu 7: Tự động hóa cấu hình giúp:", luaChon: ["A. Tăng thao tác thủ công", "B. Giảm lỗi cấu hình", "C. Tăng downtime", "D. Giảm hiệu quả"], dapAnDung: 1 }, // [cite: 312, 313]
-    { cauHoi: "Câu 8: Server dự phòng (backup server) dùng để:", luaChon: ["A. Tăng tốc mạng", "B. Thay thế khi server chính lỗi", "C. Giảm bảo mật", "D. Tắt hệ thống"], dapAnDung: 1 }, // [cite: 315, 316]
-    { cauHoi: "Câu 9: Bảo trì hệ thống gồm:", luaChon: ["A. Không kiểm tra", "B. Cập nhật và sửa lỗi", "C. Xóa dữ liệu", "D. Tắt server"], dapAnDung: 1 }, // [cite: 318, 319]
-    { cauHoi: "Câu 10: SNMP trong quản lý hệ thống dùng để:", luaChon: ["A. Lập trình", "B. Giám sát thiết bị", "C. Thiết kế web", "D. Tạo user"], dapAnDung: 1 }, // [cite: 321, 322]
-    { cauHoi: "Câu 11: Cfengine là:", luaChon: ["A. Công cụ quản lý cấu hình", "B. Hệ điều hành", "C. Phần cứng", "D. Trình duyệt"], dapAnDung: 0 }, // [cite: 324, 325]
-    { cauHoi: "Câu 12: Quản lý cấu hình cơ sở dữ liệu giúp:", luaChon: ["A. Tăng lỗi", "B. Đảm bảo dữ liệu nhất quán", "C. Giảm bảo mật", "D. Xóa dữ liệu"], dapAnDung: 1 }, // [cite: 327, 328]
-    { cauHoi: "Câu 13: Một thay đổi hệ thống cần:", luaChon: ["A. Không cần kiểm tra", "B. Test trước khi áp dụng", "C. Triển khai trực tiếp", "D. Không cần backup"], dapAnDung: 1 }, // [cite: 330, 331]
-    { cauHoi: "Câu 14: Cấu hình sai có thể gây:", luaChon: ["A. Tăng hiệu năng", "B. Lỗi hệ thống", "C. Tăng bảo mật", "D. Giảm lỗi"], dapAnDung: 1 }, // [cite: 333, 334]
-    { cauHoi: "Câu 15: Quản lý cấu hình tốt giúp:", luaChon: ["A. Hệ thống ổn định", "B. Tăng lỗi", "C. Giảm hiệu quả", "D. Tăng downtime"], dapAnDung: 0 }, // [cite: 336, 337]
-    { cauHoi: "Câu 16: Công cụ tự động hóa giúp:", luaChon: ["A. Tăng thời gian", "B. Tiết kiệm thời gian", "C. Tăng lỗi", "D. Giảm bảo mật"], dapAnDung: 1 }, // [cite: 339, 340]
-    { cauHoi: "Câu 17: Log hệ thống giúp:", luaChon: ["A. Xóa dữ liệu", "B. Theo dõi và phân tích lỗi", "C. Tăng CPU", "D. Tắt hệ thống"], dapAnDung: 1 }, // [cite: 342, 343]
-    { cauHoi: "Câu 18: Một hệ thống cần backup để:", luaChon: ["A. Giảm dung lượng", "B. Khôi phục khi sự cố", "C. Tăng lỗi", "D. Giảm bảo mật"], dapAnDung: 1 }, // [cite: 345, 346]
-    { cauHoi: "Câu 19: Quản lý thay đổi (Change Management) giúp:", luaChon: ["A. Tăng lỗi", "B. Kiểm soát thay đổi hệ thống", "C. Giảm hiệu quả", "D. Tắt server"], dapAnDung: 1 }, // [cite: 348, 349]
-    { cauHoi: "Câu 20: Mục tiêu cuối cùng của duy trì hệ thống là:", luaChon: ["A. Giảm bảo mật", "B. Đảm bảo hoạt động liên tục", "C. Tăng lỗi", "D. Giảm hiệu năng"], dapAnDung: 1 }, // [cite: 351, 352]
+        // ==================== CHƯƠNG 4 ====================
+        { chuong: 4, loai: 'thuong', cauHoi: "Câu 1: Quản trị người dùng là gì?", luaChon: ["A. Quản lý phần cứng", "B. Quản lý tài khoản và quyền truy cập", "C. Lập trình ứng dụng", "D. Thiết kế mạng"], dapAnDung: 1 },
+        { chuong: 4, loai: 'thuong', cauHoi: "Câu 2: User account dùng để:", luaChon: ["A. Tắt máy", "B. Xác thực người dùng", "C. Tăng RAM", "D. Kết nối mạng"], dapAnDung: 1 },
+        { chuong: 4, loai: 'thuong', cauHoi: "Câu 3: Username và password dùng cho:", luaChon: ["A. Lưu trữ dữ liệu", "B. Xác thực đăng nhập", "C. Tăng tốc hệ thống", "D. Cài phần mềm"], dapAnDung: 1 },
+        { chuong: 4, loai: 'thuong', cauHoi: "Câu 4: Chính sách tài khoản giúp:", luaChon: ["A. Giảm bảo mật", "B. Tăng bảo mật hệ thống", "C. Tăng lỗi", "D. Giảm hiệu năng"], dapAnDung: 1 },
+        { chuong: 4, loai: 'thuong', cauHoi: "Câu 5: Một mật khẩu mạnh nên:", luaChon: ["A. Ngắn, dễ nhớ", "B. Có chữ hoa, chữ thường, số, ký tự đặc biệt", "C. Chỉ có số", "D. Giống username"], dapAnDung: 1 },
+        { chuong: 4, loai: 'thuong', cauHoi: "Câu 6: Quyền truy cập (permission) dùng để:", luaChon: ["A. Tăng tốc CPU", "B. Kiểm soát tài nguyên", "C. Tắt hệ thống", "D. Xóa dữ liệu"], dapAnDung: 1 },
+        { chuong: 4, loai: 'thuong', cauHoi: "Câu 7: User thuộc nhóm (group) giúp:", luaChon: ["A. Giảm quản lý", "B. Quản lý quyền dễ dàng hơn", "C. Tăng lỗi", "D. Giảm bảo mật"], dapAnDung: 1 },
+        { chuong: 4, loai: 'thuong', cauHoi: "Câu 8: Môi trường đăng nhập (login environment) là:", luaChon: ["A. Phần cứng", "B. Giao diện và thiết lập khi user đăng nhập", "C. Ổ cứng", "D. CPU"], dapAnDung: 1 },
+        { chuong: 4, loai: 'thuong', cauHoi: "Câu 9: Dịch vụ hỗ trợ người dùng gồm:", luaChon: ["A. DNS", "B. Email, file sharing", "C. CPU", "D. RAM"], dapAnDung: 1 },
+        { chuong: 4, loai: 'thuong', cauHoi: "Câu 10: Giới hạn tài nguyên user giúp:", luaChon: ["A. Tăng lỗi", "B. Tránh lạm dụng tài nguyên", "C. Giảm bảo mật", "D. Tắt hệ thống"], dapAnDung: 1 },
+        { chuong: 4, loai: 'thuong', cauHoi: "Câu 11: Một user không nên có:", luaChon: ["A. Quyền phù hợp", "B. Quyền quá cao (admin) khi không cần", "C. Tài khoản riêng", "D. Password"], dapAnDung: 1 },
+        { chuong: 4, loai: 'thuong', cauHoi: "Câu 12: Chính sách khóa tài khoản giúp:", luaChon: ["A. Tăng lỗi", "B. Ngăn truy cập trái phép", "C. Giảm bảo mật", "D. Tăng CPU"], dapAnDung: 1 },
+        { chuong: 4, loai: 'thuong', cauHoi: "Câu 13: Single Sign-On (SSO) là:", luaChon: ["A. Đăng nhập nhiều lần", "B. Đăng nhập một lần dùng nhiều dịch vụ", "C. Không cần đăng nhập", "D. Xóa user"], dapAnDung: 1 },
+        { chuong: 4, loai: 'thuong', cauHoi: "Câu 14: Quản lý user trong domain giúp:", luaChon: ["A. Phân tán quản lý", "B. Quản lý tập trung", "C. Giảm bảo mật", "D. Tăng lỗi"], dapAnDung: 1 },
+        { chuong: 4, loai: 'thuong', cauHoi: "Câu 15: Tài khoản guest thường:", luaChon: ["A. Có quyền cao", "B. Quyền hạn chế", "C. Là admin", "D. Không tồn tại"], dapAnDung: 1 },
+        { chuong: 4, loai: 'thuong', cauHoi: "Câu 16: Audit (kiểm tra) user dùng để:", luaChon: ["A. Xóa user", "B. Theo dõi hoạt động", "C. Tăng RAM", "D. Tắt hệ thống"], dapAnDung: 1 },
+        { chuong: 4, loai: 'thuong', cauHoi: "Câu 17: Quản trị user cần đảm bảo:", luaChon: ["A. Không bảo mật", "B. Nguyên tắc least privilege", "C. Cho quyền tối đa", "D. Không cần password"], dapAnDung: 1 },
+        { chuong: 4, loai: 'thuong', cauHoi: "Câu 18: Least privilege nghĩa là:", luaChon: ["A. Quyền cao nhất", "B. Quyền vừa đủ cần thiết", "C. Không có quyền", "D. Tất cả quyền"], dapAnDung: 1 },
+        { chuong: 4, loai: 'thuong', cauHoi: "Câu 19: Dịch vụ người dùng trực tuyến gồm:", luaChon: ["A. Email, cloud storage", "B. CPU", "C. RAM", "D. BIOS"], dapAnDung: 0 },
+        { chuong: 4, loai: 'thuong', cauHoi: "Câu 20: Một hệ thống quản lý user tốt sẽ:", luaChon: ["A. Dễ bị tấn công", "B. An toàn và dễ quản lý", "C. Chậm hơn", "D. Tăng lỗi"], dapAnDung: 1 },
 
-    // CHƯƠNG 7
-    { cauHoi: "Câu 1: Dịch vụ mức ứng dụng là:", luaChon: ["A. Dịch vụ phần cứng", "B. Dịch vụ cung cấp cho người dùng cuối", "C. Dịch vụ mạng vật lý", "D. Dịch vụ CPU"], dapAnDung: 1 }, // [cite: 355, 356]
-    { cauHoi: "Câu 2: Proxy server dùng để:", luaChon: ["A. Tăng tốc CPU", "B. Trung gian truy cập internet", "C. Lưu trữ RAM", "D. Tắt mạng"], dapAnDung: 1 }, // [cite: 358, 359]
-    { cauHoi: "Câu 3: Ưu điểm của proxy là:", luaChon: ["A. Giảm bảo mật", "B. Cache và kiểm soát truy cập", "C. Tăng lỗi", "D. Giảm hiệu năng"], dapAnDung: 1 }, // [cite: 361, 362]
-    { cauHoi: "Câu 4: DNS dùng để:", luaChon: ["A. Lưu file", "B. Phân giải tên miền", "C. Gửi email", "D. Tạo user"], dapAnDung: 1 }, // [cite: 364]
-    { cauHoi: "Câu 5: WWW là viết tắt của:", luaChon: ["A. World Wide Web", "B. Wide Web World", "C. Web World Wide", "D. Wireless Web World"], dapAnDung: 0 }, // [cite: 366, 367]
-    { cauHoi: "Câu 6: Giao thức chính của web là:", luaChon: ["A. FTP", "B. HTTP", "C. SMTP", "D. SNMP"], dapAnDung: 1 }, // [cite: 369]
-    { cauHoi: "Câu 7: Dịch vụ Email sử dụng giao thức:", luaChon: ["A. HTTP", "B. SMTP", "C. FTP", "D. SNMP"], dapAnDung: 1 }, // [cite: 371]
-    { cauHoi: "Câu 8: POP3/IMAP dùng để:", luaChon: ["A. Gửi email", "B. Nhận email", "C. Phân giải DNS", "D. Kết nối mạng"], dapAnDung: 1 }, // [cite: 373]
-    { cauHoi: "Câu 9: OpenLDAP là:", luaChon: ["A. Hệ điều hành", "B. Dịch vụ thư mục", "C. Giao thức web", "D. Phần cứng"], dapAnDung: 1 }, // [cite: 375, 376]
-    { cauHoi: "Câu 10: NFS dùng để:", luaChon: ["A. Chia sẻ file trong mạng", "B. Gửi email", "C. Tăng CPU", "D. Tắt hệ thống"], dapAnDung: 0 }, // [cite: 378, 379]
-    { cauHoi: "Câu 11: Samba dùng để:", luaChon: ["A. Chia sẻ file giữa Linux và Windows", "B. Tăng RAM", "C. Lập trình", "D. Thiết kế web"], dapAnDung: 0 }, // [cite: 381, 382]
-    { cauHoi: "Câu 12: Dịch vụ in dùng để:", luaChon: ["A. Quản lý CPU", "B. Chia sẻ máy in", "C. Tăng RAM", "D. Lưu trữ dữ liệu"], dapAnDung: 1 }, // [cite: 384, 385]
-    { cauHoi: "Câu 13: Cài đặt dịch vụ cần:", luaChon: ["A. Không cấu hình", "B. Cấu hình đúng yêu cầu", "C. Tắt mạng", "D. Không cần kiểm tra"], dapAnDung: 1 }, // [cite: 387, 388]
-    { cauHoi: "Câu 14: DNS server giúp:", luaChon: ["A. Tăng tốc CPU", "B. Truy cập web dễ dàng hơn", "C. Giảm bảo mật", "D. Tắt hệ thống"], dapAnDung: 1 }, // [cite: 390, 391]
-    { cauHoi: "Câu 15: Proxy có thể dùng để:", luaChon: ["A. Chặn website", "B. Tăng lỗi", "C. Giảm bảo mật", "D. Tắt mạng"], dapAnDung: 0 }, // [cite: 393, 394]
-    { cauHoi: "Câu 16: Web server phổ biến:", luaChon: ["A. Apache, Nginx", "B. Excel", "C. Word", "D. Paint"], dapAnDung: 0 }, // [cite: 396]
-    { cauHoi: "Câu 17: Mail server cần đảm bảo:", luaChon: ["A. Không bảo mật", "B. Bảo mật và chống spam", "C. Tắt mạng", "D. Không cần user"], dapAnDung: 1 }, // [cite: 398, 399]
-    { cauHoi: "Câu 18: LDAP giúp:", luaChon: ["A. Tăng tốc CPU", "B. Quản lý thông tin người dùng", "C. Gửi email", "D. Tạo web"], dapAnDung: 1 }, // [cite: 401, 402]
-    { cauHoi: "Câu 19: Dịch vụ ứng dụng hoạt động ở tầng:", luaChon: ["A. Physical", "B. Application", "C. Network", "D. Data Link"], dapAnDung: 1 }, // [cite: 404]
-    { cauHoi: "Câu 20: Một hệ thống dịch vụ tốt cần:", luaChon: ["A. Không giám sát", "B. Ổn định và bảo mật", "C. Tăng lỗi", "D. Không backup"], dapAnDung: 1 }, // [cite: 406, 407]
+        { chuong: 4, loai: 'diem_liet', cauHoi: "Câu 1 (Điểm liệt): Có thể gán các cài đặt Chính sách Nhóm ở các cấp độ nào?", luaChon: ["A. 1", "B. 1, 2", "C. 1, 2, 3 (Sites, Domains, Organizational units)", "D. 1, 2, 3, 4"], dapAnDung: 2 },
+        { chuong: 4, loai: 'diem_liet', cauHoi: "Câu 2 (Điểm liệt): Chính sách: sai mật khẩu 3 lần trong 5 phút bị khóa 30 phút. Đặt ba hành động nào?", luaChon: ["A. 1, 2, 3", "B. 4, 5, 6", "C. 2, 3, 4", "D. 2, 3, 5 (Thời gian khóa 30p, Ngưỡng khóa 3 lần, Đặt lại bộ đếm 5p)"], dapAnDung: 3 },
 
-    // CHƯƠNG 8
-    { cauHoi: "Câu 1: Internet là gì?", luaChon: ["A. Một máy tính", "B. Mạng kết nối toàn cầu", "C. Phần mềm", "D. Ổ cứng"], dapAnDung: 1 }, // [cite: 410, 411]
-    { cauHoi: "Câu 2: Thiết bị nào dùng để kết nối mạng khác nhau?", luaChon: ["A. Switch", "B. Router", "C. RAM", "D. CPU"], dapAnDung: 1 }, // [cite: 413, 414]
-    { cauHoi: "Câu 3: Địa chỉ IP dùng để:", luaChon: ["A. Tăng CPU", "B. Định danh thiết bị trong mạng", "C. Lưu dữ liệu", "D. Chạy ứng dụng"], dapAnDung: 1 }, // [cite: 416, 417]
-    { cauHoi: "Câu 4: Giao thức IP thuộc tầng nào?", luaChon: ["A. Physical", "B. Network", "C. Application", "D. Data Link"], dapAnDung: 1 }, // [cite: 419]
-    { cauHoi: "Câu 5: Routing là gì?", luaChon: ["A. Lưu dữ liệu", "B. Chọn đường đi cho gói tin", "C. Tăng RAM", "D. Tắt mạng"], dapAnDung: 1 }, // [cite: 421, 422]
-    { cauHoi: "Câu 6: Switch hoạt động ở tầng:", luaChon: ["A. Physical", "B. Data Link", "C. Network", "D. Application"], dapAnDung: 1 }, // [cite: 424]
-    { cauHoi: "Câu 7: MPLS là công nghệ:", luaChon: ["A. Lưu trữ", "B. Chuyển mạch nhãn", "C. Tăng CPU", "D. Tắt mạng"], dapAnDung: 1 }, // [cite: 426]
-    { cauHoi: "Câu 8: QoS dùng để:", luaChon: ["A. Tăng lỗi", "B. Đảm bảo chất lượng dịch vụ", "C. Tắt hệ thống", "D. Giảm bảo mật"], dapAnDung: 1 }, // [cite: 428, 429]
-    { cauHoi: "Câu 9: Băng thông (Bandwidth) là:", luaChon: ["A. Dung lượng RAM", "B. Tốc độ truyền dữ liệu", "C. Dung lượng ổ cứng", "D. CPU speed"], dapAnDung: 1 }, // [cite: 431, 432]
-    { cauHoi: "Câu 10: Latency là:", luaChon: ["A. Dung lượng", "B. Độ trễ truyền dữ liệu", "C. Tốc độ CPU", "D. RAM"], dapAnDung: 1 }, // [cite: 434]
-    { cauHoi: "Câu 11: Packet là:", luaChon: ["A. File", "B. Đơn vị dữ liệu truyền trên mạng", "C. CPU", "D. RAM"], dapAnDung: 1 }, // [cite: 436]
-    { cauHoi: "Câu 12: Subnet dùng để:", luaChon: ["A. Tăng tốc CPU", "B. Chia nhỏ mạng", "C. Lưu file", "D. Tắt mạng"], dapAnDung: 1 }, // [cite: 438]
-    { cauHoi: "Câu 13: Gateway là:", luaChon: ["A. Thiết bị lưu trữ", "B. Cổng kết nối giữa các mạng", "C. CPU", "D. RAM"], dapAnDung: 1 }, // [cite: 440, 441]
-    { cauHoi: "Câu 14: TCP là giao thức:", luaChon: ["A. Không tin cậy", "B. Tin cậy", "C. Không kết nối", "D. Không truyền dữ liệu"], dapAnDung: 1 }, // [cite: 443, 444]
-    { cauHoi: "Câu 15: UDP là giao thức:", luaChon: ["A. Tin cậy cao", "B. Không kết nối, nhanh", "C. Chậm", "D. Không dùng mạng"], dapAnDung: 1 }, // [cite: 446, 447]
-    { cauHoi: "Câu 16: Định tuyến tĩnh (Static routing) là:", luaChon: ["A. Tự động", "B. Cấu hình thủ công", "C. Không cần cấu hình", "D. Không hoạt động"], dapAnDung: 1 }, // [cite: 449, 450]
-    { cauHoi: "Câu 17: Định tuyến động (Dynamic routing) là:", luaChon: ["A. Thủ công", "B. Tự động cập nhật đường đi", "C. Không dùng router", "D. Không có mạng"], dapAnDung: 1 }, // [cite: 452, 453]
-    { cauHoi: "Câu 18: Giao thức định tuyến gồm:", luaChon: ["A. RIP, OSPF", "B. HTTP", "C. FTP", "D. SMTP"], dapAnDung: 0 }, // [cite: 455]
-    { cauHoi: "Câu 19: Chuyển tiếp (Forwarding) là:", luaChon: ["A. Lưu dữ liệu", "B. Gửi gói tin đến đích", "C. Tắt mạng", "D. Tăng CPU"], dapAnDung: 1 }, // [cite: 457, 458]
-    { cauHoi: "Câu 20: Một mạng tốt cần:", luaChon: ["A. Không bảo mật", "B. Tối ưu hiệu năng và ổn định", "C. Tăng lỗi", "D. Không quản lý"], dapAnDung: 1 } // [cite: 460, 461]
-];
+        // ==================== CHƯƠNG 5 ====================
+        { chuong: 5, loai: 'thuong', cauHoi: "Câu 1: Dịch vụ thư mục (Directory Service) dùng để:", luaChon: ["A. Tăng tốc CPU", "B. Lưu trữ và quản lý thông tin tài nguyên", "C. Kết nối mạng", "D. Chạy ứng dụng"], dapAnDung: 1 },
+        { chuong: 5, loai: 'thuong', cauHoi: "Câu 2: Ví dụ của dịch vụ thư mục là:", luaChon: ["A. DNS", "B. Active Directory", "C. HTTP", "D. FTP"], dapAnDung: 1 },
+        { chuong: 5, loai: 'thuong', cauHoi: "Câu 3: LDAP là:", luaChon: ["A. Giao thức truyền file", "B. Giao thức truy cập dịch vụ thư mục", "C. Giao thức định tuyến", "D. Giao thức web"], dapAnDung: 1 },
+        { chuong: 5, loai: 'thuong', cauHoi: "Câu 4: Kiến trúc Client-Server có đặc điểm:", luaChon: ["A. Không có server", "B. Quản lý tập trung", "C. Không có client", "D. Phân tán hoàn toàn"], dapAnDung: 1 },
+        { chuong: 5, loai: 'thuong', cauHoi: "Câu 5: Mô hình Peer-to-Peer có đặc điểm:", luaChon: ["A. Tập trung", "B. Không có server trung tâm", "C. Chỉ có server", "D. Không có mạng"], dapAnDung: 1 },
+        { chuong: 5, loai: 'thuong', cauHoi: "Câu 6: Cloud Computing cho phép:", luaChon: ["A. Không cần internet", "B. Truy cập tài nguyên từ xa", "C. Giảm bảo mật", "D. Tắt hệ thống"], dapAnDung: 1 },
+        { chuong: 5, loai: 'thuong', cauHoi: "Câu 7: Mô hình Hybrid là:", luaChon: ["A. Chỉ cloud", "B. Kết hợp nhiều mô hình", "C. Chỉ on-premise", "D. Không có server"], dapAnDung: 1 },
+        { chuong: 5, loai: 'thuong', cauHoi: "Câu 8: Mô hình FCAPS gồm bao nhiêu thành phần?", luaChon: ["A. 3", "B. 4", "C. 5", "D. 6"], dapAnDung: 2 },
+        { chuong: 5, loai: 'thuong', cauHoi: "Câu 9: Trong FCAPS, chữ “F” là:", luaChon: ["A. File", "B. Fault", "C. Fast", "D. Function"], dapAnDung: 1 },
+        { chuong: 5, loai: 'thuong', cauHoi: "Câu 10: SNMP dùng để:", luaChon: ["A. Lập trình", "B. Quản lý và giám sát mạng", "C. Thiết kế web", "D. Lưu trữ dữ liệu"], dapAnDung: 1 },
+        { chuong: 5, loai: 'thuong', cauHoi: "Câu 11: Syslog dùng để:", luaChon: ["A. Tăng tốc CPU", "B. Ghi log hệ thống", "C. Kết nối mạng", "D. Tạo user"], dapAnDung: 1 },
+        { chuong: 5, loai: 'thuong', cauHoi: "Câu 12: Công cụ Zabbix dùng để:", luaChon: ["A. Lập trình", "B. Giám sát hệ thống", "C. Thiết kế mạng", "D. Chạy game"], dapAnDung: 1 },
+        { chuong: 5, loai: 'thuong', cauHoi: "Câu 13: Hạ tầng mạng bao gồm:", luaChon: ["A. Server, switch, router", "B. Chỉ CPU", "C. Chỉ RAM", "D. Chỉ phần mềm"], dapAnDung: 0 },
+        { chuong: 5, loai: 'thuong', cauHoi: "Câu 14: Firewall dùng để:", luaChon: ["A. Tăng tốc mạng", "B. Bảo mật mạng", "C. Lưu dữ liệu", "D. Chạy ứng dụng"], dapAnDung: 1 },
+        { chuong: 5, loai: 'thuong', cauHoi: "Câu 15: Triển khai On-Premise nghĩa là:", luaChon: ["A. Dùng cloud", "B. Triển khai tại chỗ", "C. Không cần server", "D. Không cần mạng"], dapAnDung: 1 },
+        { chuong: 5, loai: 'thuong', cauHoi: "Câu 16: Tự động hóa cấu hình giúp:", luaChon: ["A. Tăng lỗi", "B. Giảm thao tác thủ công", "C. Giảm bảo mật", "D. Tăng chi phí"], dapAnDung: 1 },
+        { chuong: 5, loai: 'thuong', cauHoi: "Câu 17: Công cụ Ansible dùng để:", luaChon: ["A. Lập trình game", "B. Tự động hóa cấu hình", "C. Thiết kế web", "D. Tạo database"], dapAnDung: 1 },
+        { chuong: 5, loai: 'thuong', cauHoi: "Câu 18: PowerShell thường dùng trong:", luaChon: ["A. Linux", "B. Windows", "C. Mobile", "D. Game"], dapAnDung: 1 },
+        { chuong: 5, loai: 'thuong', cauHoi: "Câu 19: Tự động hóa giúp:", luaChon: ["A. Tăng thời gian", "B. Tăng độ chính xác", "C. Giảm hiệu quả", "D. Tăng lỗi"], dapAnDung: 1 },
+        { chuong: 5, loai: 'thuong', cauHoi: "Câu 20: Một hệ thống quản trị tốt cần:", luaChon: ["A. Không giám sát", "B. Có kế hoạch và tự động hóa", "C. Không bảo mật", "D. Không backup"], dapAnDung: 1 },
 
-    const quizContainer = document.getElementById('quiz');
+        { chuong: 5, loai: 'diem_liet', cauHoi: "Câu 1 (Điểm liệt): Kiểm toán thay đổi với đối tượng người dùng trong OU cụ thể; cho phép 'Audit' xem và sửa đổi. Thực hiện các bước nào?", luaChon: ["A. 1, 2, 3", "B. 4, 5, 6", "C. 2, 3, 4", "D. 2, 5, 6 (Bật kiểm toán ADUC, Tùy chọn kiểm toán OU, Ủy quyền kiểm soát cho Audit)"], dapAnDung: 3 },
+        { chuong: 5, loai: 'diem_liet', cauHoi: "Câu 2 (Điểm liệt): Ghi lại truy cập và sửa đổi tệp nhạy cảm; cung cấp thông tin người dùng; ghi lại lần thử đăng nhập. Các bước cần thực hiện:", luaChon: ["A. 1, 5, 7, 8", "B. 3, 5, 7, 8", "C. 4, 5, 7, 8", "D. 2, 5, 7, 8 (ADUC, Trình xem Sự kiện, Kiểm toán tệp NTFS, Kiểm toán đăng nhập)"], dapAnDung: 3 },
 
-    // Hiển thị câu hỏi ra màn hình
+        // ==================== CHƯƠNG 6 ====================
+        { chuong: 6, loai: 'thuong', cauHoi: "Câu 1: Chính sách cấu hình hệ thống dùng để:", luaChon: ["A. Tăng tốc CPU", "B. Chuẩn hóa cấu hình hệ thống", "C. Xóa dữ liệu", "D. Tắt mạng"], dapAnDung: 1 },
+        { chuong: 6, loai: 'thuong', cauHoi: "Câu 2: Mục tiêu của quản lý cấu hình là:", luaChon: ["A. Tăng lỗi", "B. Đảm bảo hệ thống ổn định", "C. Giảm bảo mật", "D. Tăng chi phí"], dapAnDung: 1 },
+        { chuong: 6, loai: 'thuong', cauHoi: "Câu 3: Thay đổi cấu hình cần:", luaChon: ["A. Làm tự do", "B. Có kiểm soát và ghi log", "C. Không cần kiểm tra", "D. Không cần backup"], dapAnDung: 1 },
+        { chuong: 6, loai: 'thuong', cauHoi: "Câu 4: Ngôn ngữ khai báo (Declarative) là:", luaChon: ["A. Chỉ định cách thực hiện", "B. Chỉ định trạng thái mong muốn", "C. Không dùng trong IT", "D. Chỉ dùng lập trình game"], dapAnDung: 1 },
+        { chuong: 6, loai: 'thuong', cauHoi: "Câu 5: Ví dụ công cụ cấu hình declarative:", luaChon: ["A. Ansible", "B. Word", "C. Excel", "D. Paint"], dapAnDung: 0 },
+        { chuong: 6, loai: 'thuong', cauHoi: "Câu 6: Cấu hình chính sách giúp:", luaChon: ["A. Giảm bảo mật", "B. Đồng bộ hệ thống", "C. Tăng lỗi", "D. Giảm hiệu năng"], dapAnDung: 1 },
+        { chuong: 6, loai: 'thuong', cauHoi: "Câu 7: Tự động hóa cấu hình giúp:", luaChon: ["A. Tăng thao tác thủ công", "B. Giảm lỗi cấu hình", "C. Tăng downtime", "D. Giảm hiệu quả"], dapAnDung: 1 },
+        { chuong: 6, loai: 'thuong', cauHoi: "Câu 8: Server dự phòng (backup server) dùng để:", luaChon: ["A. Tăng tốc mạng", "B. Thay thế khi server chính lỗi", "C. Giảm bảo mật", "D. Tắt hệ thống"], dapAnDung: 1 },
+        { chuong: 6, loai: 'thuong', cauHoi: "Câu 9: Bảo trì hệ thống gồm:", luaChon: ["A. Không kiểm tra", "B. Cập nhật và sửa lỗi", "C. Xóa dữ liệu", "D. Tắt server"], dapAnDung: 1 },
+        { chuong: 6, loai: 'thuong', cauHoi: "Câu 10: SNMP trong quản lý hệ thống dùng để:", luaChon: ["A. Lập trình", "B. Giám sát thiết bị", "C. Thiết kế web", "D. Tạo user"], dapAnDung: 1 },
+        { chuong: 6, loai: 'thuong', cauHoi: "Câu 11: Cfengine là:", luaChon: ["A. Công cụ quản lý cấu hình", "B. Hệ điều hành", "C. Phần cứng", "D. Trình duyệt"], dapAnDung: 0 },
+        { chuong: 6, loai: 'thuong', cauHoi: "Câu 12: Quản lý cấu hình cơ sở dữ liệu giúp:", luaChon: ["A. Tăng lỗi", "B. Đảm bảo dữ liệu nhất quán", "C. Giảm bảo mật", "D. Xóa dữ liệu"], dapAnDung: 1 },
+        { chuong: 6, loai: 'thuong', cauHoi: "Câu 13: Một thay đổi hệ thống cần:", luaChon: ["A. Không cần kiểm tra", "B. Test trước khi áp dụng", "C. Triển khai trực tiếp", "D. Không cần backup"], dapAnDung: 1 },
+        { chuong: 6, loai: 'thuong', cauHoi: "Câu 14: Cấu hình sai có thể gây:", luaChon: ["A. Tăng hiệu năng", "B. Lỗi hệ thống", "C. Tăng bảo mật", "D. Giảm lỗi"], dapAnDung: 1 },
+        { chuong: 6, loai: 'thuong', cauHoi: "Câu 15: Quản lý cấu hình tốt giúp:", luaChon: ["A. Hệ thống ổn định", "B. Tăng lỗi", "C. Giảm hiệu quả", "D. Tăng downtime"], dapAnDung: 0 },
+        { chuong: 6, loai: 'thuong', cauHoi: "Câu 16: Công cụ tự động hóa giúp:", luaChon: ["A. Tăng thời gian", "B. Tiết kiệm thời gian", "C. Tăng lỗi", "D. Giảm bảo mật"], dapAnDung: 1 },
+        { chuong: 6, loai: 'thuong', cauHoi: "Câu 17: Log hệ thống giúp:", luaChon: ["A. Xóa dữ liệu", "B. Theo dõi và phân tích lỗi", "C. Tăng CPU", "D. Tắt hệ thống"], dapAnDung: 1 },
+        { chuong: 6, loai: 'thuong', cauHoi: "Câu 18: Một hệ thống cần backup để:", luaChon: ["A. Giảm dung lượng", "B. Khôi phục khi sự cố", "C. Tăng lỗi", "D. Giảm bảo mật"], dapAnDung: 1 },
+        { chuong: 6, loai: 'thuong', cauHoi: "Câu 19: Quản lý thay đổi (Change Management) giúp:", luaChon: ["A. Tăng lỗi", "B. Kiểm soát thay đổi hệ thống", "C. Giảm hiệu quả", "D. Tắt server"], dapAnDung: 1 },
+        { chuong: 6, loai: 'thuong', cauHoi: "Câu 20: Mục tiêu cuối cùng của duy trì hệ thống là:", luaChon: ["A. Giảm bảo mật", "B. Đảm bảo hoạt động liên tục", "C. Tăng lỗi", "D. Giảm hiệu năng"], dapAnDung: 1 },
+
+        { chuong: 6, loai: 'diem_liet', cauHoi: "Câu 1 (Điểm liệt): Ứng dụng web nhận biết RMS cho rừng JavaCup và Boston. Triển khai máy chủ AD FS ở JavaCup. Phát biểu nào đúng?", luaChon: ["A. 1, 2", "B. 1, 3", "C. 1, 4 (Cấu hình relying-party trên JavaCup & claims provider trust trên JavaCup)", "D. 2, 3"], dapAnDung: 2 },
+        { chuong: 6, loai: 'diem_liet', cauHoi: "Câu 2 (Điểm liệt): Cấu hình máy chủ CA trong DMZ cấp chứng chỉ cho người dùng từ xa. Thực hiện như thế nào?", luaChon: ["A. 1, 2", "B. 3, 4", "C. 5, 6", "D. 1, 5 (Vai trò Máy chủ Web Chính sách Đăng ký & Dịch vụ Web Đăng ký)"], dapAnDung: 3 },
+        { chuong: 6, loai: 'diem_liet', cauHoi: "Câu 3 (Điểm liệt): Ứng dụng nào phù hợp trên cụm Cân bằng tải mạng thay vì chuyển đổi dự phòng?", luaChon: ["A. 1, 2", "B. 1, 3", "C. 1, 4", "D. 2, 4 (Trang web, Dịch vụ Terminal)"], dapAnDung: 3 },
+        { chuong: 6, loai: 'diem_liet', cauHoi: "Câu 4 (Điểm liệt): Ứng dụng nào phù hợp trên cụm chuyển đổi dự phòng thay vì cân bằng tải mạng?", luaChon: ["A. 1, 2", "B. 1, 3 (SQL Server, Exchange)", "C. 1, 4", "D. 2, 4"], dapAnDung: 1 },
+
+        // ==================== CHƯƠNG 7 ====================
+        { chuong: 7, loai: 'thuong', cauHoi: "Câu 1: Dịch vụ mức ứng dụng là:", luaChon: ["A. Dịch vụ phần cứng", "B. Dịch vụ cung cấp cho người dùng cuối", "C. Dịch vụ mạng vật lý", "D. Dịch vụ CPU"], dapAnDung: 1 },
+        { chuong: 7, loai: 'thuong', cauHoi: "Câu 2: Proxy server dùng để:", luaChon: ["A. Tăng tốc CPU", "B. Trung gian truy cập internet", "C. Lưu trữ RAM", "D. Tắt mạng"], dapAnDung: 1 },
+        { chuong: 7, loai: 'thuong', cauHoi: "Câu 3: Ưu điểm của proxy là:", luaChon: ["A. Giảm bảo mật", "B. Cache và kiểm soát truy cập", "C. Tăng lỗi", "D. Giảm hiệu năng"], dapAnDung: 1 },
+        { chuong: 7, loai: 'thuong', cauHoi: "Câu 4: DNS dùng để:", luaChon: ["A. Lưu file", "B. Phân giải tên miền", "C. Gửi email", "D. Tạo user"], dapAnDung: 1 },
+        { chuong: 7, loai: 'thuong', cauHoi: "Câu 5: WWW là viết tắt của:", luaChon: ["A. World Wide Web", "B. Wide Web World", "C. Web World Wide", "D. Wireless Web World"], dapAnDung: 0 },
+        { chuong: 7, loai: 'thuong', cauHoi: "Câu 6: Giao thức chính của web là:", luaChon: ["A. FTP", "B. HTTP", "C. SMTP", "D. SNMP"], dapAnDung: 1 },
+        { chuong: 7, loai: 'thuong', cauHoi: "Câu 7: Dịch vụ Email sử dụng giao thức:", luaChon: ["A. HTTP", "B. SMTP", "C. FTP", "D. SNMP"], dapAnDung: 1 },
+        { chuong: 7, loai: 'thuong', cauHoi: "Câu 8: POP3/IMAP dùng để:", luaChon: ["A. Gửi email", "B. Nhận email", "C. Phân giải DNS", "D. Kết nối mạng"], dapAnDung: 1 },
+        { chuong: 7, loai: 'thuong', cauHoi: "Câu 9: OpenLDAP là:", luaChon: ["A. Hệ điều hành", "B. Dịch vụ thư mục", "C. Giao thức web", "D. Phần cứng"], dapAnDung: 1 },
+        { chuong: 7, loai: 'thuong', cauHoi: "Câu 10: NFS dùng để:", luaChon: ["A. Chia sẻ file trong mạng", "B. Gửi email", "C. Tăng CPU", "D. Tắt hệ thống"], dapAnDung: 0 },
+        { chuong: 7, loai: 'thuong', cauHoi: "Câu 11: Samba dùng để:", luaChon: ["A. Chia sẻ file giữa Linux và Windows", "B. Tăng RAM", "C. Lập trình", "D. Thiết kế web"], dapAnDung: 0 },
+        { chuong: 7, loai: 'thuong', cauHoi: "Câu 12: Dịch vụ in dùng để:", luaChon: ["A. Quản lý CPU", "B. Chia sẻ máy in", "C. Tăng RAM", "D. Lưu trữ dữ liệu"], dapAnDung: 1 },
+        { chuong: 7, loai: 'thuong', cauHoi: "Câu 13: Cài đặt dịch vụ cần:", luaChon: ["A. Không cấu hình", "B. Cấu hình đúng yêu cầu", "C. Tắt mạng", "D. Không cần kiểm tra"], dapAnDung: 1 },
+        { chuong: 7, loai: 'thuong', cauHoi: "Câu 14: DNS server giúp:", luaChon: ["A. Tăng tốc CPU", "B. Truy cập web dễ dàng hơn", "C. Giảm bảo mật", "D. Tắt hệ thống"], dapAnDung: 1 },
+        { chuong: 7, loai: 'thuong', cauHoi: "Câu 15: Proxy có thể dùng để:", luaChon: ["A. Chặn website", "B. Tăng lỗi", "C. Giảm bảo mật", "D. Tắt mạng"], dapAnDung: 0 },
+        { chuong: 7, loai: 'thuong', cauHoi: "Câu 16: Web server phổ biến:", luaChon: ["A. Apache, Nginx", "B. Excel", "C. Word", "D. Paint"], dapAnDung: 0 },
+        { chuong: 7, loai: 'thuong', cauHoi: "Câu 17: Mail server cần đảm bảo:", luaChon: ["A. Không bảo mật", "B. Bảo mật và chống spam", "C. Tắt mạng", "D. Không cần user"], dapAnDung: 1 },
+        { chuong: 7, loai: 'thuong', cauHoi: "Câu 18: LDAP giúp:", luaChon: ["A. Tăng tốc CPU", "B. Quản lý thông tin người dùng", "C. Gửi email", "D. Tạo web"], dapAnDung: 1 },
+        { chuong: 7, loai: 'thuong', cauHoi: "Câu 19: Dịch vụ ứng dụng hoạt động ở tầng:", luaChon: ["A. Physical", "B. Application", "C. Network", "D. Data Link"], dapAnDung: 1 },
+        { chuong: 7, loai: 'thuong', cauHoi: "Câu 20: Một hệ thống dịch vụ tốt cần:", luaChon: ["A. Không giám sát", "B. Ổn định và bảo mật", "C. Tăng lỗi", "D. Không backup"], dapAnDung: 1 },
+
+        { chuong: 7, loai: 'diem_liet', cauHoi: "Câu 1 (Điểm liệt): Gửi thông tin định kỳ giữa hai văn phòng. Yêu cầu: Không qua Internet, xác thực an toàn, giá rẻ. Giải pháp:", luaChon: ["A. 1, 2, 3", "B. 3, 4, 5", "C. 6, 7, 8", "D. 3, 5, 7 (Quay số theo yêu cầu, MS-CHAPv2, MPPE)"], dapAnDung: 3 },
+        { chuong: 7, loai: 'diem_liet', cauHoi: "Câu 2 (Điểm liệt): 5 địa điểm truyền tin qua đường dây quay số yêu cầu. Đảm bảo bảo mật liên lạc, chọn phương pháp:", luaChon: ["A. 3, 1", "B. 3, 2", "C. 3, 4", "D. 3, 5 (MPPE, MS-CHAPv2)"], dapAnDung: 3 },
+
+        // ==================== CHƯƠNG 8 ====================
+        { chuong: 8, loai: 'thuong', cauHoi: "Câu 1: Internet là gì?", luaChon: ["A. Một máy tính", "B. Mạng kết nối toàn cầu", "C. Phần mềm", "D. Ổ cứng"], dapAnDung: 1 },
+        { chuong: 8, loai: 'thuong', cauHoi: "Câu 2: Thiết bị nào dùng để kết nối mạng khác nhau?", luaChon: ["A. Switch", "B. Router", "C. RAM", "D. CPU"], dapAnDung: 1 },
+        { chuong: 8, loai: 'thuong', cauHoi: "Câu 3: Địa chỉ IP dùng để:", luaChon: ["A. Tăng CPU", "B. Định danh thiết bị trong mạng", "C. Lưu dữ liệu", "D. Chạy ứng dụng"], dapAnDung: 1 },
+        { chuong: 8, loai: 'thuong', cauHoi: "Câu 4: Giao thức IP thuộc tầng nào?", luaChon: ["A. Physical", "B. Network", "C. Application", "D. Data Link"], dapAnDung: 1 },
+        { chuong: 8, loai: 'thuong', cauHoi: "Câu 5: Routing là gì?", luaChon: ["A. Lưu dữ liệu", "B. Chọn đường đi cho gói tin", "C. Tăng RAM", "D. Tắt mạng"], dapAnDung: 1 },
+        { chuong: 8, loai: 'thuong', cauHoi: "Câu 6: Switch hoạt động ở tầng:", luaChon: ["A. Physical", "B. Data Link", "C. Network", "D. Application"], dapAnDung: 1 },
+        { chuong: 8, loai: 'thuong', cauHoi: "Câu 7: MPLS là công nghệ:", luaChon: ["A. Lưu trữ", "B. Chuyển mạch nhãn", "C. Tăng CPU", "D. Tắt mạng"], dapAnDung: 1 },
+        { chuong: 8, loai: 'thuong', cauHoi: "Câu 8: QoS dùng để:", luaChon: ["A. Tăng lỗi", "B. Đảm bảo chất lượng dịch vụ", "C. Tắt hệ thống", "D. Giảm bảo mật"], dapAnDung: 1 },
+        { chuong: 8, loai: 'thuong', cauHoi: "Câu 9: Băng thông (Bandwidth) là:", luaChon: ["A. Dung lượng RAM", "B. Tốc độ truyền dữ liệu", "C. Dung lượng ổ cứng", "D. CPU speed"], dapAnDung: 1 },
+        { chuong: 8, loai: 'thuong', cauHoi: "Câu 10: Latency là:", luaChon: ["A. Dung lượng", "B. Độ trễ truyền dữ liệu", "C. Tốc độ CPU", "D. RAM"], dapAnDung: 1 },
+        { chuong: 8, loai: 'thuong', cauHoi: "Câu 11: Packet là:", luaChon: ["A. File", "B. Đơn vị dữ liệu truyền trên mạng", "C. CPU", "D. RAM"], dapAnDung: 1 },
+        { chuong: 8, loai: 'thuong', cauHoi: "Câu 12: Subnet dùng để:", luaChon: ["A. Tăng tốc CPU", "B. Chia nhỏ mạng", "C. Lưu file", "D. Tắt mạng"], dapAnDung: 1 },
+        { chuong: 8, loai: 'thuong', cauHoi: "Câu 13: Gateway là:", luaChon: ["A. Thiết bị lưu trữ", "B. Cổng kết nối giữa các mạng", "C. CPU", "D. RAM"], dapAnDung: 1 },
+        { chuong: 8, loai: 'thuong', cauHoi: "Câu 14: TCP là giao thức:", luaChon: ["A. Không tin cậy", "B. Tin cậy", "C. Không kết nối", "D. Không truyền dữ liệu"], dapAnDung: 1 },
+        { chuong: 8, loai: 'thuong', cauHoi: "Câu 15: UDP là giao thức:", luaChon: ["A. Tin cậy cao", "B. Không kết nối, nhanh", "C. Chậm", "D. Không dùng mạng"], dapAnDung: 1 },
+        { chuong: 8, loai: 'thuong', cauHoi: "Câu 16: Định tuyến tĩnh (Static routing) là:", luaChon: ["A. Tự động", "B. Cấu hình thủ công", "C. Không cần cấu hình", "D. Không hoạt động"], dapAnDung: 1 },
+        { chuong: 8, loai: 'thuong', cauHoi: "Câu 17: Định tuyến động (Dynamic routing) là:", luaChon: ["A. Thủ công", "B. Tự động cập nhật đường đi", "C. Không dùng router", "D. Không có mạng"], dapAnDung: 1 },
+        { chuong: 8, loai: 'thuong', cauHoi: "Câu 18: Giao thức định tuyến gồm:", luaChon: ["A. RIP, OSPF", "B. HTTP", "C. FTP", "D. SMTP"], dapAnDung: 0 },
+        { chuong: 8, loai: 'thuong', cauHoi: "Câu 19: Chuyển tiếp (Forwarding) là:", luaChon: ["A. Lưu dữ liệu", "B. Gửi gói tin đến đích", "C. Tắt mạng", "D. Tăng CPU"], dapAnDung: 1 },
+        { chuong: 8, loai: 'thuong', cauHoi: "Câu 20: Một mạng tốt cần:", luaChon: ["A. Không bảo mật", "B. Tối ưu hiệu năng và ổn định", "C. Tăng lỗi", "D. Không quản lý"], dapAnDung: 1 },
+
+        { chuong: 8, loai: 'diem_liet', cauHoi: "Câu 1 (Điểm liệt): Giảm lưu lượng AD qua liên kết chậm. Yêu cầu: Kiểm soát giờ sao chép, không thêm/xóa DC. Thực hiện:", luaChon: ["A. 1, 2", "B. 1, 3", "C. 1, 4 (Đối tượng Kết nối chỉ định giờ & Tạo trang phản ánh vật lý)", "D. 1, 5"], dapAnDung: 2 },
+        { chuong: 8, loai: 'diem_liet', cauHoi: "Câu 2 (Điểm liệt): Giảm lưu lượng mạng giữa 2 trang, giảm thiểu thay đổi cấu trúc, không đổi vật lý. Giải pháp nào?", luaChon: ["A. Tạo trang bổ sung", "B. Tạo nhiều liên kết trang", "C. Tạo cầu nối liên kết", "D. Cấu hình máy chủ tại mỗi trang hoạt động như máy chủ đầu cầu ưu tiên."], dapAnDung: 3 }
+    ];
+
+    let cauHoiHienTai = [];
+
+    function locCauHoi() {
+        const chuongDuocChon = document.getElementById('chonChuong').value;
+        const loaiDuocChon = document.getElementById('chonLoai').value;
+
+        cauHoiHienTai = danhSachCauHoi.filter(cau => {
+            const matchChuong = (chuongDuocChon === 'all') || (cau.chuong == chuongDuocChon);
+            const matchLoai = (loaiDuocChon === 'all') || (cau.loai === loaiDuocChon);
+            return matchChuong && matchLoai;
+        });
+
+        hienThiCauHoi();
+    }
+
     function hienThiCauHoi() {
-        danhSachCauHoi.forEach((cau, index) => {
+        const quizContainer = document.getElementById('quiz');
+        const stats = document.getElementById('stats');
+        
+        quizContainer.innerHTML = ''; 
+        document.getElementById('result').innerText = ''; 
+
+        if(cauHoiHienTai.length === 0) {
+            stats.innerHTML = "Không tìm thấy câu hỏi nào phù hợp với bộ lọc.";
+            return;
+        }
+
+        stats.innerHTML = `Đang hiển thị <b>${cauHoiHienTai.length}</b> câu hỏi.`;
+
+        cauHoiHienTai.forEach((cau, index) => {
             const div = document.createElement('div');
             div.className = 'question';
-            div.innerHTML = `<h3>${cau.cauHoi}</h3>`;
+            
+            const badgeHTML = (cau.loai === 'diem_liet') ? `<span class="badge">[ĐIỂM LIỆT]</span>` : '';
+            div.innerHTML = `<h3>${badgeHTML} ${cau.cauHoi}</h3>`;
             
             const ul = document.createElement('ul');
             ul.className = 'options';
@@ -235,20 +319,23 @@ const danhSachCauHoi = [
         });
     }
 
-    // Chấm điểm
     function kiemTraKetQua() {
+        if(cauHoiHienTai.length === 0) return;
+
         let diem = 0;
-        danhSachCauHoi.forEach((cau, index) => {
+        cauHoiHienTai.forEach((cau, index) => {
             const luaChonCuaNguoiDung = document.querySelector(`input[name="cau_${index}"]:checked`);
             if (luaChonCuaNguoiDung && parseInt(luaChonCuaNguoiDung.value) === cau.dapAnDung) {
                 diem++;
             }
         });
-        document.getElementById('result').innerText = `Bạn đã đúng ${diem} / ${danhSachCauHoi.length} câu!`;
+        
+        const tyLe = Math.round((diem / cauHoiHienTai.length) * 100);
+        document.getElementById('result').innerText = `Kết quả: Bạn đã đúng ${diem} / ${cauHoiHienTai.length} câu (${tyLe}%)!`;
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); 
     }
 
-    // Gọi hàm để chạy khi trang vừa tải
-    hienThiCauHoi();
+    locCauHoi();
 </script>
 
 </body>
