@@ -17,6 +17,12 @@
         .options li { margin-bottom: 8px; }
         .options label { cursor: pointer; display: block; padding: 10px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 4px; transition: 0.2s; }
         .options label:hover { background: #e2e6ea; }
+        
+        /* CSS tô màu đáp án đúng / sai */
+        .correct { background-color: #d4edda !important; color: #155724 !important; border-color: #c3e6cb !important; font-weight: bold; }
+        .incorrect { background-color: #f8d7da !important; color: #721c24 !important; border-color: #f5c6cb !important; text-decoration: line-through; }
+        .disabled-label { pointer-events: none; opacity: 0.9; } /* Khóa không cho click lại */
+
         .btn-submit { display: block; width: 100%; padding: 15px; background: #28a745; color: white; border: none; font-size: 18px; border-radius: 5px; cursor: pointer; margin-top: 20px;}
         .btn-submit:hover { background: #218838; }
         #result { margin-top: 20px; font-size: 20px; font-weight: bold; text-align: center; color: #d9534f; }
@@ -49,7 +55,7 @@
 
     <div class="stats" id="stats">Đang tải câu hỏi...</div>
     <div id="quiz"></div>
-    <button class="btn-submit" onclick="kiemTraKetQua()">Nộp Bài</button>
+    <button class="btn-submit" onclick="kiemTraKetQua()">Nộp Bài (Xem Tổng Điểm)</button>
     <div id="result"></div>
 </div>
 
@@ -305,10 +311,11 @@
             ul.className = 'options';
             
             cau.luaChon.forEach((lc, vitri) => {
+                // Thêm sự kiện onchange để kiểm tra đáp án ngay khi click
                 ul.innerHTML += `
                     <li>
                         <label>
-                            <input type="radio" name="cau_${index}" value="${vitri}">
+                            <input type="radio" name="cau_${index}" value="${vitri}" onchange="kiemTraDapAn(${index})">
                             ${lc}
                         </label>
                     </li>
@@ -319,19 +326,58 @@
         });
     }
 
+    // Hàm xử lý khi người dùng click chọn 1 đáp án
+    function kiemTraDapAn(indexCauHoi) {
+        const cau = cauHoiHienTai[indexCauHoi];
+        const cacInput = document.querySelectorAll(`input[name="cau_${indexCauHoi}"]`);
+        
+        // Lấy giá trị mà người dùng vừa chọn
+        const luaChonCuaNguoiDung = parseInt(document.querySelector(`input[name="cau_${indexCauHoi}"]:checked`).value);
+        
+        cacInput.forEach((input) => {
+            // Khóa tất cả các lựa chọn của câu này lại, không cho đổi nữa
+            input.disabled = true;
+            
+            const label = input.parentElement;
+            label.classList.add('disabled-label');
+            
+            const viTri = parseInt(input.value);
+            
+            // Nếu đây là đáp án ĐÚNG -> Bôi XANH
+            if (viTri === cau.dapAnDung) {
+                label.classList.add('correct');
+            } 
+            // Nếu người dùng chọn SAI (và đây chính là cái họ chọn) -> Bôi ĐỎ
+            else if (viTri === luaChonCuaNguoiDung) {
+                label.classList.add('incorrect');
+            }
+        });
+    }
+
     function kiemTraKetQua() {
         if(cauHoiHienTai.length === 0) return;
 
         let diem = 0;
+        let soCauDaLam = 0;
+
         cauHoiHienTai.forEach((cau, index) => {
             const luaChonCuaNguoiDung = document.querySelector(`input[name="cau_${index}"]:checked`);
-            if (luaChonCuaNguoiDung && parseInt(luaChonCuaNguoiDung.value) === cau.dapAnDung) {
-                diem++;
+            if (luaChonCuaNguoiDung) {
+                soCauDaLam++;
+                if (parseInt(luaChonCuaNguoiDung.value) === cau.dapAnDung) {
+                    diem++;
+                }
             }
         });
         
         const tyLe = Math.round((diem / cauHoiHienTai.length) * 100);
-        document.getElementById('result').innerText = `Kết quả: Bạn đã đúng ${diem} / ${cauHoiHienTai.length} câu (${tyLe}%)!`;
+        
+        if (soCauDaLam < cauHoiHienTai.length) {
+            document.getElementById('result').innerText = `Bạn mới làm ${soCauDaLam}/${cauHoiHienTai.length} câu. Số câu ĐÚNG là: ${diem} câu.`;
+        } else {
+            document.getElementById('result').innerText = `Hoàn thành! Kết quả: ${diem} / ${cauHoiHienTai.length} câu (${tyLe}%)!`;
+        }
+        
         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }); 
     }
 
